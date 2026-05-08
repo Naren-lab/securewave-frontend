@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
 
-  // Get logged-in user dynamically
+  // Get logged-in user
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("user") || "{}")
@@ -41,6 +41,7 @@ export default function DashboardPage() {
     };
   }, [senderId]);
 
+  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -52,6 +53,20 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch old messages
+  const fetchMessages = async (receiverId: string) => {
+    try {
+      const res = await axios.get(
+        `https://securewave-backend-2.onrender.com/api/chat/messages/${senderId}/${receiverId}`
+      );
+
+      setMessages(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // Send message
   const sendMessage = async () => {
     if (!message || !selectedUser) return;
 
@@ -76,6 +91,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -138,19 +154,24 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Main Chat Layout */}
+      {/* Chat Layout */}
       <div className="flex flex-1">
 
         {/* Sidebar */}
         <div className="w-[30%] bg-[#111B21] p-4">
-          <h2 className="text-2xl font-bold mb-5">Chats</h2>
+          <h2 className="text-2xl font-bold mb-5">
+            Chats
+          </h2>
 
           {users.map(
             (user) =>
               user._id !== senderId && (
                 <div
                   key={user._id}
-                  onClick={() => setSelectedUser(user)}
+                  onClick={() => {
+                    setSelectedUser(user);
+                    fetchMessages(user._id);
+                  }}
                   className="bg-[#202C33] p-4 mb-3 rounded-lg cursor-pointer hover:bg-[#2a3942]"
                 >
                   {user.name}
@@ -162,7 +183,7 @@ export default function DashboardPage() {
         {/* Chat Area */}
         <div className="w-[70%] flex flex-col">
 
-          {/* Chat Header */}
+          {/* Header */}
           <div className="bg-[#202C33] p-4 text-xl font-bold">
             {selectedUser
               ? `Chat with ${selectedUser.name}`
@@ -185,11 +206,13 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Message Input */}
+          {/* Input */}
           <div className="p-4 flex gap-3 bg-[#111B21]">
             <input
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) =>
+                setMessage(e.target.value)
+              }
               placeholder="Type message..."
               className="flex-1 p-3 rounded-lg text-black"
             />

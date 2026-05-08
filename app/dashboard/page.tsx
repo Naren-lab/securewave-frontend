@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const socket = io("securewave-backend-2.onrender.com");
 
 export default function DashboardPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -27,7 +27,7 @@ export default function DashboardPage() {
   }, []);
 
   const fetchUsers = async () => {
-    const res = await axios.get("http://localhost:5000/api/users");
+    const res = await axios.get("https://securewave-backend-2.onrender.com/api/users");
     setUsers(res.data);
   };
 
@@ -41,7 +41,7 @@ export default function DashboardPage() {
     };
 
     await axios.post(
-      "http://localhost:5000/api/chat/send",
+      "https://securewave-backend-2.onrender.com/api/chat/send",
       data
     );
 

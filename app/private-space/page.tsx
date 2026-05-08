@@ -27,7 +27,7 @@ export default function PrivateSpacePage() {
   const fetchDevices = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/devices/${userId}`
+        `https://securewave-backend-2.onrender.com/api/devices/${userId}`
       );
 
       setDevices(res.data);
@@ -40,7 +40,7 @@ export default function PrivateSpacePage() {
   const linkDevice = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/devices/link",
+        "https://securewave-backend-2.onrender.com/api/devices/link",
         {
           userId,
           deviceName: "New Linked Device",
@@ -60,7 +60,7 @@ export default function PrivateSpacePage() {
   const logoutDevice = async (deviceId: string) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/devices/logout/${deviceId}`
+        `https://securewave-backend-2.onrender.com/api/devices/logout/${deviceId}`
       );
 
       fetchDevices();
@@ -75,7 +75,7 @@ export default function PrivateSpacePage() {
   const removeDevice = async (deviceId: string) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/devices/${deviceId}`
+        `https://securewave-backend-2.onrender.com/api/devices/${deviceId}`
       );
 
       fetchDevices();

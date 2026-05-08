@@ -22,7 +22,7 @@ export default function ProtectionModePage() {
   const enableProtection = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/protection/set",
+        "https://securewave-backend-2.onrender.com/api/protection/set",
         {
           userId,
           password
@@ -39,7 +39,7 @@ export default function ProtectionModePage() {
   const unlockChats = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/protection/verify",
+        "https://securewave-backend-2.onrender.com/api/protection/verify",
         {
           userId,
           password
@@ -58,7 +58,7 @@ export default function ProtectionModePage() {
   const disableProtection = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/protection/disable",
+        "https://securewave-backend-2.onrender.com/api/protection/disable",
         {
           userId
         }
@@ -76,7 +76,7 @@ export default function ProtectionModePage() {
   const resetPassword = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/protection/set",
+        "https://securewave-backend-2.onrender.com/api/protection/set",
         {
           userId,
           password: newPassword

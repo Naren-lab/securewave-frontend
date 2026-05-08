@@ -41,6 +41,7 @@ export default function DashboardPage() {
     };
   }, [senderId]);
 
+  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -52,6 +53,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch old messages
   const fetchMessages = async (receiverId: string) => {
     try {
       const res = await axios.get(
@@ -64,6 +66,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Send message
   const sendMessage = async () => {
     if (!message && !selectedFile) return;
     if (!selectedUser) return;
@@ -113,6 +116,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -179,7 +183,9 @@ export default function DashboardPage() {
 
         {/* Sidebar */}
         <div className="w-[30%] bg-[#111B21] p-4">
-          <h2 className="text-2xl font-bold mb-5">Chats</h2>
+          <h2 className="text-2xl font-bold mb-5">
+            Chats
+          </h2>
 
           {users.map(
             (user) =>
@@ -201,6 +207,7 @@ export default function DashboardPage() {
         {/* Chat Area */}
         <div className="w-[70%] flex flex-col">
 
+          {/* Header */}
           <div className="bg-[#202C33] p-4 text-xl font-bold">
             {selectedUser
               ? `Chat with ${selectedUser.name}`
@@ -218,22 +225,66 @@ export default function DashboardPage() {
                     : "bg-gray-700"
                 }`}
               >
-                {msg.message}
-
-                {msg.fileUrl && (
-                  <a
-                    href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
-                    target="_blank"
-                    className="block text-blue-300 underline mt-2"
-                  >
-                    View File
-                  </a>
+                {/* Text */}
+                {msg.message && (
+                  <p>{msg.message}</p>
                 )}
+
+                {/* Image */}
+                {msg.fileUrl &&
+                  msg.fileType?.startsWith("image") && (
+                    <img
+                      src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                      alt="shared"
+                      className="mt-2 rounded-lg max-w-full"
+                    />
+                  )}
+
+                {/* Video */}
+                {msg.fileUrl &&
+                  msg.fileType?.startsWith("video") && (
+                    <video
+                      controls
+                      className="mt-2 rounded-lg max-w-full"
+                    >
+                      <source
+                        src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                      />
+                    </video>
+                  )}
+
+                {/* Audio */}
+                {msg.fileUrl &&
+                  msg.fileType?.startsWith("audio") && (
+                    <audio
+                      controls
+                      className="mt-2 w-full"
+                    >
+                      <source
+                        src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                      />
+                    </audio>
+                  )}
+
+                {/* Documents */}
+                {msg.fileUrl &&
+                  !msg.fileType?.startsWith("image") &&
+                  !msg.fileType?.startsWith("video") &&
+                  !msg.fileType?.startsWith("audio") && (
+                    <a
+                      href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-blue-300 underline mt-2"
+                    >
+                      View Document
+                    </a>
+                  )}
               </div>
             ))}
           </div>
 
-          {/* Input */}
+          {/* Input Section */}
           <div className="p-4 flex gap-3 bg-[#111B21]">
 
             <input

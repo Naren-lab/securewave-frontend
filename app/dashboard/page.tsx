@@ -17,7 +17,6 @@ export default function DashboardPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Get logged-in user
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("user") || "{}")
@@ -42,7 +41,6 @@ export default function DashboardPage() {
     };
   }, [senderId]);
 
-  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -54,7 +52,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch old messages
   const fetchMessages = async (receiverId: string) => {
     try {
       const res = await axios.get(
@@ -67,16 +64,37 @@ export default function DashboardPage() {
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!message && !selectedFile) return;
     if (!selectedUser) return;
+
+    let fileUrl = "";
+    let fileType = "";
+
+    // Upload file first
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      try {
+        const uploadRes = await axios.post(
+          "https://securewave-backend-2.onrender.com/api/upload",
+          formData
+        );
+
+        fileUrl = uploadRes.data.fileUrl;
+        fileType = uploadRes.data.fileType;
+      } catch (error) {
+        console.log("File upload failed:", error);
+      }
+    }
 
     const data = {
       sender: senderId,
       receiver: selectedUser._id,
       message,
-      file: selectedFile,
+      fileUrl,
+      fileType,
     };
 
     try {
@@ -95,7 +113,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -104,7 +121,7 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen bg-[#0B141A] text-white flex flex-col">
-      
+
       {/* Top Navigation */}
       <div className="flex gap-3 p-4 bg-[#111B21] overflow-x-auto">
         <Link href="/calls">
@@ -159,7 +176,7 @@ export default function DashboardPage() {
 
       {/* Chat Layout */}
       <div className="flex flex-1">
-        
+
         {/* Sidebar */}
         <div className="w-[30%] bg-[#111B21] p-4">
           <h2 className="text-2xl font-bold mb-5">Chats</h2>
@@ -183,8 +200,7 @@ export default function DashboardPage() {
 
         {/* Chat Area */}
         <div className="w-[70%] flex flex-col">
-          
-          {/* Header */}
+
           <div className="bg-[#202C33] p-4 text-xl font-bold">
             {selectedUser
               ? `Chat with ${selectedUser.name}`
@@ -203,31 +219,42 @@ export default function DashboardPage() {
                 }`}
               >
                 {msg.message}
+
+                {msg.fileUrl && (
+                  <a
+                    href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                    target="_blank"
+                    className="block text-blue-300 underline mt-2"
+                  >
+                    View File
+                  </a>
+                )}
               </div>
             ))}
           </div>
 
-          {/* Input + File Upload */}
+          {/* Input */}
           <div className="p-4 flex gap-3 bg-[#111B21]">
-            
-            {/* File Upload */}
+
             <input
               type="file"
               onChange={(e) =>
-                setSelectedFile(e.target.files?.[0] || null)
+                setSelectedFile(
+                  e.target.files?.[0] || null
+                )
               }
               className="text-white bg-[#202C33] p-2 rounded-lg"
             />
 
-            {/* Message Input */}
             <input
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) =>
+                setMessage(e.target.value)
+              }
               placeholder="Type message..."
               className="flex-1 p-3 rounded-lg text-black"
             />
 
-            {/* Send Button */}
             <button
               onClick={sendMessage}
               className="bg-green-500 px-6 rounded-lg"

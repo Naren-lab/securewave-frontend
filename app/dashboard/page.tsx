@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Get logged-in user
   const currentUser =
@@ -68,12 +69,14 @@ export default function DashboardPage() {
 
   // Send message
   const sendMessage = async () => {
-    if (!message || !selectedUser) return;
+    if (!message && !selectedFile) return;
+    if (!selectedUser) return;
 
     const data = {
       sender: senderId,
       receiver: selectedUser._id,
       message,
+      file: selectedFile,
     };
 
     try {
@@ -86,6 +89,7 @@ export default function DashboardPage() {
 
       setMessages((prev) => [...prev, data]);
       setMessage("");
+      setSelectedFile(null);
     } catch (error) {
       console.log(error);
     }
@@ -209,6 +213,9 @@ export default function DashboardPage() {
             {/* File Upload */}
             <input
               type="file"
+              onChange={(e) =>
+                setSelectedFile(e.target.files?.[0] || null)
+              }
               className="text-white bg-[#202C33] p-2 rounded-lg"
             />
 

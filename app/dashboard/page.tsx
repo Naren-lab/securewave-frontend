@@ -4,20 +4,32 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-// Fixed socket URL
 const socket = io("https://securewave-backend-2.onrender.com");
 
 export default function DashboardPage() {
+  const router = useRouter();
+
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
 
-  // Current logged-in user ID
-  const senderId = "69fd35073407e82f7551e98a";
+  // Get logged-in user dynamically
+  const currentUser =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "{}")
+      : {};
+
+  const senderId = currentUser?._id;
 
   useEffect(() => {
+    if (!senderId) {
+      router.push("/login");
+      return;
+    }
+
     fetchUsers();
 
     socket.on("receive_message", (data) => {
@@ -27,7 +39,7 @@ export default function DashboardPage() {
     return () => {
       socket.off("receive_message");
     };
-  }, []);
+  }, [senderId]);
 
   const fetchUsers = async () => {
     try {
@@ -62,6 +74,12 @@ export default function DashboardPage() {
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
   };
 
   return (
@@ -111,6 +129,13 @@ export default function DashboardPage() {
             Settings
           </button>
         </Link>
+
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 px-4 py-2 rounded-lg"
+        >
+          Logout
+        </button>
       </div>
 
       {/* Main Chat Layout */}
@@ -137,9 +162,11 @@ export default function DashboardPage() {
         {/* Chat Area */}
         <div className="w-[70%] flex flex-col">
 
-          {/* Selected Chat Header */}
+          {/* Chat Header */}
           <div className="bg-[#202C33] p-4 text-xl font-bold">
-            {selectedUser ? selectedUser.name : "Select a chat"}
+            {selectedUser
+              ? `Chat with ${selectedUser.name}`
+              : "Select a chat"}
           </div>
 
           {/* Messages */}

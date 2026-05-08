@@ -100,10 +100,9 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen bg-[#0B141A] text-white flex flex-col">
-
+      
       {/* Top Navigation */}
       <div className="flex gap-3 p-4 bg-[#111B21] overflow-x-auto">
-
         <Link href="/calls">
           <button className="bg-green-500 px-4 py-2 rounded-lg">
             Voice Call
@@ -156,12 +155,10 @@ export default function DashboardPage() {
 
       {/* Chat Layout */}
       <div className="flex flex-1">
-
+        
         {/* Sidebar */}
         <div className="w-[30%] bg-[#111B21] p-4">
-          <h2 className="text-2xl font-bold mb-5">
-            Chats
-          </h2>
+          <h2 className="text-2xl font-bold mb-5">Chats</h2>
 
           {users.map(
             (user) =>
@@ -182,7 +179,7 @@ export default function DashboardPage() {
 
         {/* Chat Area */}
         <div className="w-[70%] flex flex-col">
-
+          
           {/* Header */}
           <div className="bg-[#202C33] p-4 text-xl font-bold">
             {selectedUser
@@ -206,17 +203,24 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Input */}
+          {/* Input + File Upload */}
           <div className="p-4 flex gap-3 bg-[#111B21]">
+            
+            {/* File Upload */}
+            <input
+              type="file"
+              className="text-white bg-[#202C33] p-2 rounded-lg"
+            />
+
+            {/* Message Input */}
             <input
               value={message}
-              onChange={(e) =>
-                setMessage(e.target.value)
-              }
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Type message..."
               className="flex-1 p-3 rounded-lg text-black"
             />
 
+            {/* Send Button */}
             <button
               onClick={sendMessage}
               className="bg-green-500 px-6 rounded-lg"

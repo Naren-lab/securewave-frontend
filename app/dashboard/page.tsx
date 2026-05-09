@@ -41,7 +41,6 @@ export default function DashboardPage() {
     };
   }, [senderId]);
 
-  // Fetch all users
   const fetchUsers = async () => {
     try {
       const res = await axios.get(
@@ -53,20 +52,17 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch old messages
   const fetchMessages = async (receiverId: string) => {
     try {
       const res = await axios.get(
         `https://securewave-backend-2.onrender.com/api/chat/messages/${senderId}/${receiverId}`
       );
-
       setMessages(res.data);
     } catch (error) {
       console.log(error);
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!message && !selectedFile) return;
     if (!selectedUser) return;
@@ -74,22 +70,17 @@ export default function DashboardPage() {
     let fileUrl = "";
     let fileType = "";
 
-    // Upload file first
     if (selectedFile) {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      try {
-        const uploadRes = await axios.post(
-          "https://securewave-backend-2.onrender.com/api/upload",
-          formData
-        );
+      const uploadRes = await axios.post(
+        "https://securewave-backend-2.onrender.com/api/upload",
+        formData
+      );
 
-        fileUrl = uploadRes.data.fileUrl;
-        fileType = uploadRes.data.fileType;
-      } catch (error) {
-        console.log("File upload failed:", error);
-      }
+      fileUrl = uploadRes.data.fileUrl;
+      fileType = uploadRes.data.fileType;
     }
 
     const data = {
@@ -100,23 +91,18 @@ export default function DashboardPage() {
       fileType,
     };
 
-    try {
-      await axios.post(
-        "https://securewave-backend-2.onrender.com/api/chat/send",
-        data
-      );
+    await axios.post(
+      "https://securewave-backend-2.onrender.com/api/chat/send",
+      data
+    );
 
-      socket.emit("send_message", data);
+    socket.emit("send_message", data);
 
-      setMessages((prev) => [...prev, data]);
-      setMessage("");
-      setSelectedFile(null);
-    } catch (error) {
-      console.log(error);
-    }
+    setMessages((prev) => [...prev, data]);
+    setMessage("");
+    setSelectedFile(null);
   };
 
-  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -124,195 +110,177 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-screen bg-[#0B141A] text-white flex flex-col">
+    <div className="h-screen flex bg-[#111B21] text-white overflow-hidden">
 
-      {/* Top Navigation */}
-      <div className="flex gap-3 p-4 bg-[#111B21] overflow-x-auto">
-        <Link href="/calls">
-          <button className="bg-green-500 px-4 py-2 rounded-lg">
-            Voice Call
-          </button>
-        </Link>
+      {/* Left Icon Sidebar */}
+      <div className="w-[80px] bg-[#202C33] flex flex-col items-center py-5 gap-6">
+        <div className="w-12 h-12 bg-green-500 rounded-full"></div>
 
-        <Link href="/calls/video">
-          <button className="bg-blue-500 px-4 py-2 rounded-lg">
-            Video Call
-          </button>
-        </Link>
-
-        <Link href="/qr">
-          <button className="bg-yellow-500 px-4 py-2 rounded-lg text-black">
-            QR Contacts
-          </button>
-        </Link>
-
-        <Link href="/private-space">
-          <button className="bg-purple-500 px-4 py-2 rounded-lg">
-            Private Space
-          </button>
-        </Link>
-
-        <Link href="/protection">
-          <button className="bg-red-500 px-4 py-2 rounded-lg">
-            Protection Mode
-          </button>
-        </Link>
-
-        <Link href="/notifications">
-          <button className="bg-orange-500 px-4 py-2 rounded-lg">
-            Notifications
-          </button>
-        </Link>
-
-        <Link href="/settings">
-          <button className="bg-gray-500 px-4 py-2 rounded-lg">
-            Settings
-          </button>
-        </Link>
+        <Link href="/calls">📞</Link>
+        <Link href="/calls/video">🎥</Link>
+        <Link href="/qr">📱</Link>
+        <Link href="/private-space">🔒</Link>
+        <Link href="/notifications">🔔</Link>
+        <Link href="/settings">⚙️</Link>
 
         <button
           onClick={handleLogout}
-          className="bg-red-600 px-4 py-2 rounded-lg"
+          className="mt-auto bg-red-500 px-3 py-2 rounded-lg"
         >
           Logout
         </button>
       </div>
 
-      {/* Chat Layout */}
-      <div className="flex flex-1">
+      {/* Chat List */}
+      <div className="w-[30%] bg-[#111B21] border-r border-gray-700 flex flex-col">
 
-        {/* Sidebar */}
-        <div className="w-[30%] bg-[#111B21] p-4">
-          <h2 className="text-2xl font-bold mb-5">
-            Chats
-          </h2>
-
-          {users.map(
-            (user) =>
-              user._id !== senderId && (
-                <div
-                  key={user._id}
-                  onClick={() => {
-                    setSelectedUser(user);
-                    fetchMessages(user._id);
-                  }}
-                  className="bg-[#202C33] p-4 mb-3 rounded-lg cursor-pointer hover:bg-[#2a3942]"
-                >
-                  {user.name}
-                </div>
-              )
-          )}
+        {/* Search */}
+        <div className="p-4">
+          <input
+            placeholder="Search chats..."
+            className="w-full p-3 rounded-lg bg-[#202C33] text-white"
+          />
         </div>
 
-        {/* Chat Area */}
-        <div className="w-[70%] flex flex-col">
-
-          {/* Header */}
-          <div className="bg-[#202C33] p-4 text-xl font-bold">
-            {selectedUser
-              ? `Chat with ${selectedUser.name}`
-              : "Select a chat"}
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 p-6 overflow-y-auto">
-            {messages.map((msg, index) => (
+        {/* Users */}
+        <div className="flex-1 overflow-y-auto px-3">
+          {users
+            .filter((user) => user._id !== senderId)
+            .map((user) => (
               <div
-                key={index}
-                className={`p-3 rounded-lg mb-3 max-w-sm ${
-                  msg.sender === senderId
-                    ? "bg-green-500 ml-auto"
-                    : "bg-gray-700"
-                }`}
+                key={user._id}
+                onClick={() => {
+                  setSelectedUser(user);
+                  fetchMessages(user._id);
+                }}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#202C33] cursor-pointer mb-2"
               >
-                {/* Text */}
-                {msg.message && (
-                  <p>{msg.message}</p>
-                )}
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center font-bold">
+                  {user.name?.charAt(0)}
+                </div>
 
-                {/* Image */}
-                {msg.fileUrl &&
-                  msg.fileType?.startsWith("image") && (
-                    <img
-                      src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
-                      alt="shared"
-                      className="mt-2 rounded-lg max-w-full"
-                    />
-                  )}
-
-                {/* Video */}
-                {msg.fileUrl &&
-                  msg.fileType?.startsWith("video") && (
-                    <video
-                      controls
-                      className="mt-2 rounded-lg max-w-full"
-                    >
-                      <source
-                        src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
-                      />
-                    </video>
-                  )}
-
-                {/* Audio */}
-                {msg.fileUrl &&
-                  msg.fileType?.startsWith("audio") && (
-                    <audio
-                      controls
-                      className="mt-2 w-full"
-                    >
-                      <source
-                        src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
-                      />
-                    </audio>
-                  )}
-
-                {/* Documents */}
-                {msg.fileUrl &&
-                  !msg.fileType?.startsWith("image") &&
-                  !msg.fileType?.startsWith("video") &&
-                  !msg.fileType?.startsWith("audio") && (
-                    <a
-                      href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-blue-300 underline mt-2"
-                    >
-                      View Document
-                    </a>
-                  )}
+                <div>
+                  <h2 className="font-semibold">
+                    {user.name}
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    Click to chat
+                  </p>
+                </div>
               </div>
             ))}
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="w-[70%] flex flex-col bg-[#0B141A]">
+
+        {/* Header */}
+        <div className="h-20 bg-[#202C33] flex items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-500 rounded-full"></div>
+
+            <div>
+              <h2 className="font-bold text-lg">
+                {selectedUser
+                  ? selectedUser.name
+                  : "Select Chat"}
+              </h2>
+              <p className="text-green-400 text-sm">
+                Online
+              </p>
+            </div>
           </div>
 
-          {/* Input Section */}
-          <div className="p-4 flex gap-3 bg-[#111B21]">
+          <div className="flex gap-5 text-xl">
+            <Link href="/calls/video">🎥</Link>
+            <Link href="/calls">📞</Link>
+            🔍
+          </div>
+        </div>
 
-            <input
-              type="file"
-              onChange={(e) =>
-                setSelectedFile(
-                  e.target.files?.[0] || null
-                )
-              }
-              className="text-white bg-[#202C33] p-2 rounded-lg"
-            />
-
-            <input
-              value={message}
-              onChange={(e) =>
-                setMessage(e.target.value)
-              }
-              placeholder="Type message..."
-              className="flex-1 p-3 rounded-lg text-black"
-            />
-
-            <button
-              onClick={sendMessage}
-              className="bg-green-500 px-6 rounded-lg"
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B141A]">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`p-3 rounded-xl mb-4 max-w-sm ${
+                msg.sender === senderId
+                  ? "bg-green-500 ml-auto"
+                  : "bg-[#202C33]"
+              }`}
             >
-              Send
-            </button>
-          </div>
+              {msg.message && <p>{msg.message}</p>}
+
+              {msg.fileUrl &&
+                msg.fileType?.startsWith("image") && (
+                  <img
+                    src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                    className="mt-2 rounded-lg"
+                  />
+                )}
+
+              {msg.fileUrl &&
+                msg.fileType?.startsWith("video") && (
+                  <video controls className="mt-2 rounded-lg">
+                    <source
+                      src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                    />
+                  </video>
+                )}
+
+              {msg.fileUrl &&
+                msg.fileType?.startsWith("audio") && (
+                  <audio controls className="mt-2 w-full">
+                    <source
+                      src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                    />
+                  </audio>
+                )}
+
+              {msg.fileUrl &&
+                !msg.fileType?.startsWith("image") &&
+                !msg.fileType?.startsWith("video") &&
+                !msg.fileType?.startsWith("audio") && (
+                  <a
+                    href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
+                    target="_blank"
+                    className="text-blue-300 underline"
+                  >
+                    View Document
+                  </a>
+                )}
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="p-4 bg-[#202C33] flex items-center gap-3">
+          <input
+            type="file"
+            onChange={(e) =>
+              setSelectedFile(
+                e.target.files?.[0] || null
+              )
+            }
+            className="text-white"
+          />
+
+          <input
+            value={message}
+            onChange={(e) =>
+              setMessage(e.target.value)
+            }
+            placeholder="Type a message..."
+            className="flex-1 p-3 rounded-full bg-[#2A3942] text-white"
+          />
+
+          <button
+            onClick={sendMessage}
+            className="bg-green-500 px-6 py-3 rounded-full"
+          >
+            Send
+          </button>
         </div>
       </div>
     </div>

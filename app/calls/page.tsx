@@ -38,8 +38,9 @@ export default function VoiceCallPage() {
 
     // Receive own socket id
     socket.on("me", (id: string) => {
-      setMe(id);
-    });
+  console.log("Received Socket ID:", id);
+  setMe(id);
+});
 
     // Incoming call
     socket.on("callUser", (data: any) => {

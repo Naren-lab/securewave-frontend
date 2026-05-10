@@ -8,6 +8,9 @@ export default function LinkDevicePage() {
   const [scannedResult, setScannedResult] =
     useState("");
 
+  const [manualCode, setManualCode] =
+    useState("");
+
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(
@@ -17,6 +20,7 @@ export default function LinkDevicePage() {
 
   const userId = currentUser?._id;
 
+  // QR scanner
   const startScanner = () => {
     const scanner =
       new Html5QrcodeScanner(
@@ -42,6 +46,7 @@ export default function LinkDevicePage() {
     );
   };
 
+  // Request link after QR scan
   const requestDeviceLink =
     async () => {
       try {
@@ -64,57 +69,109 @@ export default function LinkDevicePage() {
       }
     };
 
-  return (
-    <div className="min-h-screen bg-black text-white p-10">
+  // Manual code request
+  const requestManualLink =
+    async () => {
+      try {
+        if (!manualCode) {
+          alert(
+            "Enter link code"
+          );
+          return;
+        }
 
-      <h1 className="text-3xl mb-8">
+        await axios.post(
+          "https://securewave-backend-2.onrender.com/api/devices/link",
+          {
+            userId,
+            deviceName:
+              navigator.userAgent,
+            deviceType:
+              "Browser",
+            manualCode
+          }
+        );
+
+        alert(
+          "Manual link request sent"
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  return (
+    <div className="min-h-screen bg-[#0B141A] text-white p-10">
+
+      <h1 className="text-3xl font-bold mb-8">
         Link New Device
       </h1>
 
-      <button
-        onClick={startScanner}
-        className="bg-green-500 px-6 py-3 rounded-lg"
-      >
-        Scan QR Using Camera
-      </button>
+      <div className="grid md:grid-cols-2 gap-8">
 
-      <div
-        id="reader"
-        className="mt-6"
-      ></div>
+        {/* QR Scanner */}
+        <div className="bg-[#111B21] p-6 rounded-xl">
+          <h2 className="text-xl mb-4 font-bold">
+            Scan QR Code
+          </h2>
 
-      {scannedResult && (
-        <div className="mt-6">
-          <p>
-            QR Scanned:
-          </p>
+          <button
+            onClick={startScanner}
+            className="bg-green-500 px-6 py-3 rounded-lg"
+          >
+            Start Camera Scanner
+          </button>
 
-          <p className="text-green-400">
-            {scannedResult}
-          </p>
+          <div
+            id="reader"
+            className="mt-5"
+          ></div>
+
+          {scannedResult && (
+            <div className="mt-5">
+              <p className="text-green-400">
+                QR Scanned Successfully
+              </p>
+
+              <button
+                onClick={
+                  requestDeviceLink
+                }
+                className="mt-4 bg-blue-500 px-6 py-2 rounded-lg"
+              >
+                Request Link
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Manual Code */}
+        <div className="bg-[#111B21] p-6 rounded-xl">
+          <h2 className="text-xl mb-4 font-bold">
+            Enter Manual Link Code
+          </h2>
+
+          <input
+            type="text"
+            placeholder="Enter code (Ex: SW-397282)"
+            value={manualCode}
+            onChange={(e) =>
+              setManualCode(
+                e.target.value
+              )
+            }
+            className="w-full p-3 rounded-lg text-black"
+          />
 
           <button
             onClick={
-              requestDeviceLink
+              requestManualLink
             }
-            className="mt-4 bg-blue-500 px-6 py-3 rounded-lg"
+            className="mt-5 bg-green-500 px-6 py-3 rounded-lg"
           >
-            Request Link
+            Submit Code
           </button>
         </div>
-      )}
-
-      {/* Upload QR Image */}
-      <div className="mt-10">
-        <h2 className="text-xl mb-4">
-          Or Upload QR Image
-        </h2>
-
-        <input
-          type="file"
-          accept="image/*"
-          className="text-white"
-        />
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-
 import {
   Laptop,
   Smartphone,
@@ -10,19 +9,29 @@ import {
   QrCode,
   ShieldCheck,
   LogOut,
-  CheckCircle
+  Trash2,
+  Lock,
+  Unlock
 } from "lucide-react";
 
 export default function PrivateSpacePage() {
   const [devices, setDevices] = useState<any[]>([]);
+  const [pendingDevices, setPendingDevices] = useState<any[]>([]);
 
-  // Primary user ID
-  const userId = "69fd35073407e82f7551e98a";
+  const currentUser =
+    typeof window !== "undefined"
+      ? JSON.parse(
+          localStorage.getItem("user") || "{}"
+        )
+      : {};
 
-  // Fetch devices when page loads
+  const userId = currentUser?._id;
+
   useEffect(() => {
-    fetchDevices();
-  }, []);
+    if (userId) {
+      fetchDevices();
+    }
+  }, [userId]);
 
   const fetchDevices = async () => {
     try {
@@ -30,206 +39,322 @@ export default function PrivateSpacePage() {
         `https://securewave-backend-2.onrender.com/api/devices/${userId}`
       );
 
-      setDevices(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+      const allDevices = res.data;
 
-  // Link new device
-  const linkDevice = async () => {
-    try {
-      await axios.post(
-        "https://securewave-backend-2.onrender.com/api/devices/link",
-        {
-          userId,
-          deviceName: "New Linked Device",
-          deviceType: "Mobile"
-        }
+      setDevices(
+        allDevices.filter(
+          (d: any) =>
+            d.status === "active"
+        )
       );
 
-      fetchDevices();
-
-      alert("Device linked successfully");
+      setPendingDevices(
+        allDevices.filter(
+          (d: any) =>
+            d.status === "pending"
+        )
+      );
     } catch (error) {
       console.log(error);
     }
   };
 
-  // Force logout linked device
-  const logoutDevice = async (deviceId: string) => {
+  // Generate link request only
+  const generateLinkRequest = () => {
+    alert(
+      "Share QR/link code with another device to request access"
+    );
+  };
+
+  // Approve device
+  const approveDevice = async (
+    deviceId: string
+  ) => {
     try {
       await axios.put(
-        `https://securewave-backend-2.onrender.com/api/devices/logout/${deviceId}`
+        `https://securewave-backend-2.onrender.com/api/devices/approve/${deviceId}`
       );
 
+      alert("Device approved");
       fetchDevices();
-
-      alert("Device logged out");
     } catch (error) {
       console.log(error);
     }
   };
 
-  // Remove linked device
-  const removeDevice = async (deviceId: string) => {
+  // Deny device
+  const denyDevice = async (
+    deviceId: string
+  ) => {
     try {
       await axios.delete(
         `https://securewave-backend-2.onrender.com/api/devices/${deviceId}`
       );
 
+      alert("Device denied");
       fetchDevices();
-
-      alert("Device removed successfully");
     } catch (error) {
       console.log(error);
     }
   };
 
+  // Grant private access
+  const grantPrivateAccess =
+    async (deviceId: string) => {
+      try {
+        await axios.put(
+          `https://securewave-backend-2.onrender.com/api/devices/private-access/${deviceId}`
+        );
+
+        alert(
+          "Private access granted"
+        );
+        fetchDevices();
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  // Remove private access
+  const removePrivateAccess =
+    async (deviceId: string) => {
+      try {
+        await axios.put(
+          `https://securewave-backend-2.onrender.com/api/devices/remove-private/${deviceId}`
+        );
+
+        alert(
+          "Private access removed"
+        );
+        fetchDevices();
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  // Logout device
+  const logoutDevice = async (
+    deviceId: string
+  ) => {
+    try {
+      await axios.put(
+        `https://securewave-backend-2.onrender.com/api/devices/logout/${deviceId}`
+      );
+
+      alert("Device logged out");
+      fetchDevices();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // Remove device
+  const removeDevice = async (
+    deviceId: string
+  ) => {
+    try {
+      await axios.delete(
+        `https://securewave-backend-2.onrender.com/api/devices/${deviceId}`
+      );
+
+      alert("Device removed");
+      fetchDevices();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getDeviceIcon = (
+    type: string
+  ) => {
+    if (type === "Mobile")
+      return (
+        <Smartphone className="text-green-400" />
+      );
+
+    if (type === "Tablet")
+      return (
+        <Tablet className="text-purple-400" />
+      );
+
+    return (
+      <Laptop className="text-blue-400" />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0B141A] text-white p-8">
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-green-400">
-          Private Space Dashboard
-        </h1>
+      <h1 className="text-3xl font-bold text-green-400 mb-8">
+        Private Space Dashboard
+      </h1>
 
-        <p className="text-gray-400 mt-2">
-          Manage linked devices securely
-        </p>
-      </div>
-
-      {/* Link New Device */}
-      <div className="bg-[#111B21] rounded-2xl p-6 mb-8">
+      {/* Link Device */}
+      <div className="bg-[#111B21] p-6 rounded-xl mb-8">
         <div className="flex items-center gap-3 mb-4">
           <QrCode className="text-green-400" />
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-bold">
             Link New Device
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-
-          {/* QR Link */}
-          <div className="bg-[#202C33] p-6 rounded-xl text-center">
-            <div className="w-40 h-40 bg-white mx-auto rounded-xl flex items-center justify-center text-black font-bold">
-              QR CODE
-            </div>
-
-            <button
-              onClick={linkDevice}
-              className="mt-4 bg-green-500 px-6 py-3 rounded-xl"
-            >
-              Scan to Link Device
-            </button>
-          </div>
-
-          {/* Link Code */}
-          <div className="bg-[#202C33] p-6 rounded-xl text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Link Code
-            </h3>
-
-            <div className="text-3xl font-bold text-blue-400">
-              SW-LINK-4821
-            </div>
-
-            <p className="text-gray-400 mt-4">
-              Enter this code on your new device
-            </p>
-          </div>
-        </div>
+        <button
+          onClick={
+            generateLinkRequest
+          }
+          className="bg-green-500 px-6 py-3 rounded-lg"
+        >
+          Generate QR / Link Code
+        </button>
       </div>
 
-      {/* Device Approval Requests */}
-      <div className="bg-[#111B21] rounded-2xl p-6 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <ShieldCheck className="text-yellow-400" />
-          <h2 className="text-xl font-semibold">
-            Pending Device Approval
-          </h2>
-        </div>
-
-        <div className="bg-[#202C33] p-4 rounded-xl flex justify-between items-center">
-          <div>
-            <h3>MacBook Chrome Browser</h3>
-            <p className="text-gray-400 text-sm">
-              New device requesting access
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <button className="bg-green-500 px-4 py-2 rounded-lg">
-              Approve
-            </button>
-
-            <button className="bg-red-500 px-4 py-2 rounded-lg">
-              Deny
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Linked Devices */}
-      <div className="bg-[#111B21] rounded-2xl p-6">
-        <h2 className="text-xl font-semibold mb-6">
-          Active Linked Devices
+      {/* Pending Devices */}
+      <div className="bg-[#111B21] p-6 rounded-xl mb-8">
+        <h2 className="text-xl font-bold mb-4">
+          Pending Device Requests
         </h2>
 
-        <div className="space-y-4">
-          {devices.length > 0 ? (
-            devices.map((device: any) => (
+        {pendingDevices.length >
+        0 ? (
+          pendingDevices.map(
+            (device) => (
               <div
                 key={device._id}
-                className="bg-[#202C33] p-4 rounded-xl flex justify-between items-center"
+                className="bg-[#202C33] p-4 rounded-xl flex justify-between mb-4"
               >
-                <div className="flex items-center gap-4">
-
-                  {device.deviceType === "Mobile" ? (
-                    <Smartphone className="text-green-400" />
-                  ) : device.deviceType === "Tablet" ? (
-                    <Tablet className="text-purple-400" />
-                  ) : (
-                    <Laptop className="text-blue-400" />
-                  )}
-
-                  <div>
-                    <h3>{device.deviceName}</h3>
-
-                    <p className="text-sm text-gray-400">
-                      Status: {device.status}
-                    </p>
-
-                    <p className="text-sm text-gray-500">
-                      Session expires in 30 mins
-                    </p>
-                  </div>
+                <div>
+                  <h3>
+                    {
+                      device.deviceName
+                    }
+                  </h3>
+                  <p>
+                    Waiting approval
+                  </p>
                 </div>
 
                 <div className="flex gap-3">
-                  <LogOut
+                  <button
                     onClick={() =>
-                      logoutDevice(device._id)
+                      approveDevice(
+                        device._id
+                      )
                     }
-                    className="text-red-400 cursor-pointer"
-                  />
+                    className="bg-green-500 px-4 py-2 rounded"
+                  >
+                    Approve
+                  </button>
 
-                  <CheckCircle
+                  <button
                     onClick={() =>
-                      removeDevice(device._id)
+                      denyDevice(
+                        device._id
+                      )
                     }
-                    className="text-green-400 cursor-pointer"
-                  />
+                    className="bg-red-500 px-4 py-2 rounded"
+                  >
+                    Deny
+                  </button>
                 </div>
               </div>
-            ))
-          ) : (
-            <p className="text-gray-400">
-              No linked devices found
-            </p>
-          )}
-        </div>
+            )
+          )
+        ) : (
+          <p>
+            No pending devices
+          </p>
+        )}
+      </div>
+
+      {/* Active Devices */}
+      <div className="bg-[#111B21] p-6 rounded-xl">
+        <h2 className="text-xl font-bold mb-4">
+          Active Devices
+        </h2>
+
+        {devices.map((device) => (
+          <div
+            key={device._id}
+            className="bg-[#202C33] p-4 rounded-xl mb-4 flex justify-between"
+          >
+            <div className="flex gap-4">
+              {getDeviceIcon(
+                device.deviceType
+              )}
+
+              <div>
+                <h3>
+                  {
+                    device.deviceName
+                  }
+                </h3>
+
+                {device.isMainDevice && (
+                  <span className="bg-green-500 px-2 py-1 rounded text-xs">
+                    MAIN DEVICE
+                  </span>
+                )}
+
+                {device.hasPrivateAccess &&
+                  !device.isMainDevice && (
+                    <span className="bg-purple-500 px-2 py-1 rounded text-xs ml-2">
+                      PRIVATE ACCESS
+                    </span>
+                  )}
+
+                {!device.isMainDevice &&
+                  !device.hasPrivateAccess && (
+                    <p className="text-sm text-yellow-400">
+                      Auto logout:
+                      10 mins
+                    </p>
+                  )}
+              </div>
+            </div>
+
+            {!device.isMainDevice && (
+              <div className="flex gap-3">
+                {!device.hasPrivateAccess ? (
+                  <Lock
+                    className="cursor-pointer text-green-400"
+                    onClick={() =>
+                      grantPrivateAccess(
+                        device._id
+                      )
+                    }
+                  />
+                ) : (
+                  <Unlock
+                    className="cursor-pointer text-yellow-400"
+                    onClick={() =>
+                      removePrivateAccess(
+                        device._id
+                      )
+                    }
+                  />
+                )}
+
+                <LogOut
+                  className="cursor-pointer text-red-400"
+                  onClick={() =>
+                    logoutDevice(
+                      device._id
+                    )
+                  }
+                />
+
+                <Trash2
+                  className="cursor-pointer text-red-500"
+                  onClick={() =>
+                    removeDevice(
+                      device._id
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

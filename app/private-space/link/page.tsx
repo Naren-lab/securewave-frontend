@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function LinkDevicePage() {
+  const router = useRouter();
+
   const [scannedResult, setScannedResult] =
     useState("");
 
@@ -12,6 +15,9 @@ export default function LinkDevicePage() {
     useState("");
 
   const [loading, setLoading] =
+    useState(false);
+
+  const [scannerStarted, setScannerStarted] =
     useState(false);
 
   const currentUser =
@@ -27,6 +33,13 @@ export default function LinkDevicePage() {
   // Start QR Scanner
   //-----------------------------------
   const startScanner = () => {
+    if (scannerStarted) {
+      alert("Scanner already running");
+      return;
+    }
+
+    setScannerStarted(true);
+
     const scanner =
       new Html5QrcodeScanner(
         "reader",
@@ -43,6 +56,7 @@ export default function LinkDevicePage() {
           setScannedResult(decodedText);
 
           scanner.clear();
+          setScannerStarted(false);
 
           setLoading(true);
 
@@ -131,16 +145,30 @@ export default function LinkDevicePage() {
     if (!file) return;
 
     alert(
-      "QR image upload selected.\n(Scanner from image decoding can be added next if needed)"
+      `${file.name} uploaded successfully. QR decoding can be added next.`
     );
   };
 
   return (
     <div className="min-h-screen bg-[#0B141A] text-white p-10">
 
-      <h1 className="text-3xl font-bold mb-8 text-center">
-        Link New Device
-      </h1>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">
+          Link New Device
+        </h1>
+
+        <button
+          onClick={() =>
+            router.push(
+              "/private-space"
+            )
+          }
+          className="bg-gray-700 px-5 py-2 rounded-lg"
+        >
+          Back to Private Space
+        </button>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-8">
 
@@ -163,9 +191,15 @@ export default function LinkDevicePage() {
           ></div>
 
           {scannedResult && (
-            <p className="mt-4 text-green-400">
-              QR Scanned Successfully
-            </p>
+            <div className="mt-4">
+              <p className="text-green-400 font-semibold">
+                QR Scanned Successfully
+              </p>
+
+              <p className="text-sm text-gray-400 mt-2 break-all">
+                {scannedResult}
+              </p>
+            </div>
           )}
         </div>
 
@@ -213,14 +247,13 @@ export default function LinkDevicePage() {
           />
 
           <p className="text-gray-400 mt-4 text-sm">
-            Upload screenshot/photo
-            of QR code
+            Upload screenshot/photo of QR code
           </p>
         </div>
       </div>
 
       {loading && (
-        <div className="mt-8 text-center text-green-400">
+        <div className="mt-8 text-center text-green-400 text-lg">
           Processing request...
         </div>
       )}

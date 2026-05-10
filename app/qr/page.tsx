@@ -6,71 +6,148 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import axios from "axios";
 
 export default function QRPage() {
-  const [scannedResult, setScannedResult] = useState("");
+  const [scannedResult, setScannedResult] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const currentUser =
     typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "{}")
+      ? JSON.parse(
+          localStorage.getItem(
+            "user"
+          ) || "{}"
+        )
       : {};
 
-  // Use actual logged-in MongoDB user ID
-  const userId = currentUser?._id;
+  const userId =
+    currentUser?._id;
 
-  const qrRef = useRef<HTMLCanvasElement>(null);
+  const qrRef =
+    useRef<HTMLCanvasElement | null>(
+      null
+    );
 
+  /* ---------------- Generate QR ---------------- */
   useEffect(() => {
-    if (qrRef.current && userId) {
-      QRCode.toCanvas(qrRef.current, userId);
+    if (
+      qrRef.current &&
+      userId
+    ) {
+      QRCode.toCanvas(
+        qrRef.current,
+        userId,
+        {
+          width: 250,
+        }
+      );
     }
   }, [userId]);
 
+  /* ---------------- Start Scanner ---------------- */
   const startScanner = () => {
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: 250,
-      },
-      false
-    );
+    const scanner =
+      new Html5QrcodeScanner(
+        "reader",
+        {
+          fps: 10,
+          qrbox: 250,
+        },
+        false
+      );
 
     scanner.render(
-      (decodedText) => {
-        setScannedResult(decodedText);
+      async (
+        decodedText
+      ) => {
+        console.log(
+          "Current User:",
+          userId
+        );
+
+        console.log(
+          "Scanned Contact:",
+          decodedText
+        );
+
+        // Prevent self scan
+        if (
+          decodedText ===
+          userId
+        ) {
+          alert(
+            "You cannot add yourself"
+          );
+          scanner.clear();
+          return;
+        }
+
+        setScannedResult(
+          decodedText
+        );
+
         scanner.clear();
       },
+
       (error) => {
-        console.log(error);
+        console.log(
+          error
+        );
       }
     );
   };
 
-  // Add scanned user as contact
-  const addContact = async () => {
-    try {
-      console.log("Current User:", userId);
-      console.log("Scanned Contact:", scannedResult);
+  /* ---------------- Add Contact ---------------- */
+  const addContact =
+    async () => {
+      try {
+        setLoading(true);
 
-      const res = await axios.post(
-        "https://securewave-backend-2.onrender.com/api/contacts/add",
-        {
-          userId: userId,
-          contactId: scannedResult,
-        }
-      );
+        const res =
+          await axios.post(
+            "https://securewave-backend-2.onrender.com/api/contacts/add",
+            {
+              userId:
+                userId,
+              contactId:
+                scannedResult,
+            }
+          );
 
-      alert(
-        res.data.message || "Contact Added Successfully"
-      );
-    } catch (error: any) {
-      console.log(error);
+        alert(
+          res.data
+            .message ||
+            "Contact Added Successfully"
+        );
 
-      alert(
-        error.response?.data?.message ||
-          "Failed to add contact"
-      );
-    }
-  };
+        // Clear scanned result
+        setScannedResult(
+          ""
+        );
+
+        // Redirect dashboard to refresh contacts
+        window.location.href =
+          "/dashboard";
+      } catch (
+        error: any
+      ) {
+        console.log(
+          error
+        );
+
+        alert(
+          error.response
+            ?.data
+            ?.message ||
+            "Failed to add contact"
+        );
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
 
   return (
     <div className="min-h-screen bg-[#0B141A] text-white p-10">
@@ -79,17 +156,21 @@ export default function QRPage() {
       </h1>
 
       <div className="grid md:grid-cols-2 gap-10">
-
-        {/* Your QR */}
+        
+        {/* QR Generator */}
         <div className="bg-[#202C33] p-6 rounded-xl">
           <h2 className="text-xl mb-4 font-bold">
             Your QR Code
           </h2>
 
-          <canvas ref={qrRef}></canvas>
+          <canvas
+            ref={qrRef}
+          ></canvas>
 
-          <p className="mt-4 text-gray-300">
-            Your User ID: {userId}
+          <p className="mt-4 text-gray-300 break-all">
+            Your User ID:
+            <br />
+            {userId}
           </p>
         </div>
 
@@ -100,27 +181,43 @@ export default function QRPage() {
           </h2>
 
           <button
-            onClick={startScanner}
-            className="bg-green-500 px-5 py-2 rounded-lg"
+            onClick={
+              startScanner
+            }
+            className="bg-green-500 px-5 py-2 rounded-lg hover:bg-green-600"
           >
             Start Scanner
           </button>
 
-          <div id="reader" className="mt-5"></div>
+          <div
+            id="reader"
+            className="mt-5"
+          ></div>
 
           {scannedResult && (
-            <div className="mt-4">
-              <p>Scanned User ID:</p>
+            <div className="mt-5">
+              <p>
+                Scanned User ID:
+              </p>
 
-              <p className="text-green-400">
-                {scannedResult}
+              <p className="text-green-400 break-all">
+                {
+                  scannedResult
+                }
               </p>
 
               <button
-                onClick={addContact}
-                className="mt-4 bg-blue-500 px-5 py-2 rounded-lg"
+                onClick={
+                  addContact
+                }
+                disabled={
+                  loading
+                }
+                className="mt-4 bg-blue-500 px-5 py-2 rounded-lg hover:bg-blue-600"
               >
-                Add Contact
+                {loading
+                  ? "Adding..."
+                  : "Add Contact"}
               </button>
             </div>
           )}

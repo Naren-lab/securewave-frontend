@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import Peer from "simple-peer";
 
 const socket = io(
-  "https://securewave-backend-2.onrender.com"
+  "https://securewave-backend-2.onrender.com",
+  {
+    transports: ["websocket"],
+  }
 );
 
 export default function VoiceCallPage() {
@@ -15,13 +17,14 @@ export default function VoiceCallPage() {
   const [me, setMe] =
     useState("");
 
-  const [idToCall, setIdToCall] =
+  const [usernameToCall, setUsernameToCall] =
     useState("");
 
   const myAudio =
     useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    // Get microphone
     navigator.mediaDevices
       .getUserMedia({
         audio: true,
@@ -49,38 +52,89 @@ export default function VoiceCallPage() {
         );
       });
 
+    // Get current logged user
+    const currentUser =
+      JSON.parse(
+        localStorage.getItem(
+          "user"
+        ) || "{}"
+      );
+
+    // Join socket using username
+    socket.emit(
+      "join_user",
+      {
+        userId:
+          currentUser._id,
+        username:
+          currentUser.name,
+      }
+    );
+
+    // Receive socket ID
     socket.on(
       "me",
       (id: string) => {
         console.log(
-          "My Call ID:",
+          "My Socket ID:",
           id
         );
         setMe(id);
       }
     );
 
+    // Receive incoming call
+    socket.on(
+      "callUser",
+      (data) => {
+        alert(
+          `Incoming call from ${data.from}`
+        );
+
+        console.log(
+          "Incoming call:",
+          data
+        );
+      }
+    );
+
     return () => {
       socket.off("me");
+      socket.off(
+        "callUser"
+      );
     };
   }, []);
 
+  // Call user by username
   const callUser = () => {
-    if (!idToCall) {
+    if (
+      !usernameToCall
+    ) {
       alert(
-        "Enter valid Call ID"
+        "Enter username"
       );
       return;
     }
 
+    socket.emit(
+      "callUser",
+      {
+        usernameToCall:
+          usernameToCall,
+        signalData:
+          "voice-call-request",
+        from: me,
+      }
+    );
+
     alert(
-      "Calling: " +
-        idToCall
+      `Calling ${usernameToCall}`
     );
 
     console.log(
       "Calling user:",
-      idToCall
+      usernameToCall
     );
   };
 
@@ -91,22 +145,26 @@ export default function VoiceCallPage() {
       </h1>
 
       <p className="mb-2 text-lg">
-        Your Call ID:
+        Your Socket ID:
       </p>
 
-      {/* Fixed visibility */}
       <input
         value={me}
         readOnly
         className="bg-white text-black p-3 rounded mb-4 w-80 text-center font-bold"
       />
 
-      {/* Fixed visibility */}
+      <p className="mb-2 text-lg">
+        Enter Username:
+      </p>
+
       <input
-        placeholder="Enter ID to call"
-        value={idToCall}
+        placeholder="Enter username"
+        value={
+          usernameToCall
+        }
         onChange={(e) =>
-          setIdToCall(
+          setUsernameToCall(
             e.target.value
           )
         }
@@ -117,7 +175,7 @@ export default function VoiceCallPage() {
         onClick={callUser}
         className="bg-green-500 px-6 py-3 rounded text-white font-bold hover:bg-green-600"
       >
-        Call
+        Call User
       </button>
 
       <audio

@@ -11,6 +11,9 @@ export default function LinkDevicePage() {
   const [manualCode, setManualCode] =
     useState("");
 
+  const [loading, setLoading] =
+    useState(false);
+
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(
@@ -20,7 +23,9 @@ export default function LinkDevicePage() {
 
   const userId = currentUser?._id;
 
-  // QR scanner
+  //-----------------------------------
+  // Start QR Scanner
+  //-----------------------------------
   const startScanner = () => {
     const scanner =
       new Html5QrcodeScanner(
@@ -33,12 +38,38 @@ export default function LinkDevicePage() {
       );
 
     scanner.render(
-      (decodedText) => {
-        setScannedResult(
-          decodedText
-        );
+      async (decodedText) => {
+        try {
+          setScannedResult(decodedText);
 
-        scanner.clear();
+          scanner.clear();
+
+          setLoading(true);
+
+          await axios.post(
+            "https://securewave-backend-2.onrender.com/api/devices/link",
+            {
+              userId,
+              deviceName:
+                navigator.userAgent,
+              deviceType:
+                "Browser",
+              qrData:
+                decodedText
+            }
+          );
+
+          alert(
+            "QR scanned successfully. Request sent to main device."
+          );
+        } catch (error) {
+          console.log(error);
+          alert(
+            "Failed to send QR request"
+          );
+        } finally {
+          setLoading(false);
+        }
       },
       (error) => {
         console.log(error);
@@ -46,39 +77,20 @@ export default function LinkDevicePage() {
     );
   };
 
-  // Request link after QR scan
-  const requestDeviceLink =
-    async () => {
-      try {
-        await axios.post(
-          "https://securewave-backend-2.onrender.com/api/devices/link",
-          {
-            userId,
-            deviceName:
-              navigator.userAgent,
-            deviceType:
-              "Browser"
-          }
-        );
-
-        alert(
-          "Device request sent to main device"
-        );
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-  // Manual code request
+  //-----------------------------------
+  // Manual code linking
+  //-----------------------------------
   const requestManualLink =
     async () => {
       try {
         if (!manualCode) {
           alert(
-            "Enter link code"
+            "Please enter link code"
           );
           return;
         }
+
+        setLoading(true);
 
         await axios.post(
           "https://securewave-backend-2.onrender.com/api/devices/link",
@@ -93,21 +105,44 @@ export default function LinkDevicePage() {
         );
 
         alert(
-          "Manual link request sent"
+          "Manual link request sent successfully"
         );
+
+        setManualCode("");
       } catch (error) {
         console.log(error);
+        alert(
+          "Manual link failed"
+        );
+      } finally {
+        setLoading(false);
       }
     };
+
+  //-----------------------------------
+  // QR image upload
+  //-----------------------------------
+  const handleImageUpload = async (
+    e: any
+  ) => {
+    const file =
+      e.target.files[0];
+
+    if (!file) return;
+
+    alert(
+      "QR image upload selected.\n(Scanner from image decoding can be added next if needed)"
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#0B141A] text-white p-10">
 
-      <h1 className="text-3xl font-bold mb-8">
+      <h1 className="text-3xl font-bold mb-8 text-center">
         Link New Device
       </h1>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid md:grid-cols-3 gap-8">
 
         {/* QR Scanner */}
         <div className="bg-[#111B21] p-6 rounded-xl">
@@ -117,7 +152,7 @@ export default function LinkDevicePage() {
 
           <button
             onClick={startScanner}
-            className="bg-green-500 px-6 py-3 rounded-lg"
+            className="bg-green-500 px-6 py-3 rounded-lg w-full"
           >
             Start Camera Scanner
           </button>
@@ -128,32 +163,21 @@ export default function LinkDevicePage() {
           ></div>
 
           {scannedResult && (
-            <div className="mt-5">
-              <p className="text-green-400">
-                QR Scanned Successfully
-              </p>
-
-              <button
-                onClick={
-                  requestDeviceLink
-                }
-                className="mt-4 bg-blue-500 px-6 py-2 rounded-lg"
-              >
-                Request Link
-              </button>
-            </div>
+            <p className="mt-4 text-green-400">
+              QR Scanned Successfully
+            </p>
           )}
         </div>
 
         {/* Manual Code */}
         <div className="bg-[#111B21] p-6 rounded-xl">
           <h2 className="text-xl mb-4 font-bold">
-            Enter Manual Link Code
+            Enter Manual Code
           </h2>
 
           <input
             type="text"
-            placeholder="Enter code (Ex: SW-397282)"
+            placeholder="Enter code"
             value={manualCode}
             onChange={(e) =>
               setManualCode(
@@ -167,12 +191,39 @@ export default function LinkDevicePage() {
             onClick={
               requestManualLink
             }
-            className="mt-5 bg-green-500 px-6 py-3 rounded-lg"
+            className="mt-5 bg-blue-500 px-6 py-3 rounded-lg w-full"
           >
             Submit Code
           </button>
         </div>
+
+        {/* Upload QR Image */}
+        <div className="bg-[#111B21] p-6 rounded-xl">
+          <h2 className="text-xl mb-4 font-bold">
+            Upload QR Image
+          </h2>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={
+              handleImageUpload
+            }
+            className="w-full"
+          />
+
+          <p className="text-gray-400 mt-4 text-sm">
+            Upload screenshot/photo
+            of QR code
+          </p>
+        </div>
       </div>
+
+      {loading && (
+        <div className="mt-8 text-center text-green-400">
+          Processing request...
+        </div>
+      )}
     </div>
   );
 }

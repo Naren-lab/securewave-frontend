@@ -13,9 +13,7 @@ const socket = io(
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [users, setUsers] =
-    useState<any[]>([]);
-
+  const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] =
     useState<any>(null);
 
@@ -29,8 +27,7 @@ export default function DashboardPage() {
     useState<File | null>(null);
 
   const currentUser =
-    typeof window !==
-    "undefined"
+    typeof window !== "undefined"
       ? JSON.parse(
           localStorage.getItem(
             "user"
@@ -49,7 +46,6 @@ export default function DashboardPage() {
 
     fetchContacts();
 
-    /* JOIN ROOM */
     socket.emit(
       "join_user",
       senderId
@@ -60,19 +56,15 @@ export default function DashboardPage() {
       (data) => {
         if (
           selectedUser &&
-          (
-            data.senderId ===
-              selectedUser._id ||
+          (data.senderId ===
+            selectedUser._id ||
             data.receiverId ===
-              selectedUser._id
-          )
+              selectedUser._id)
         ) {
-          setMessages(
-            (prev) => [
-              ...prev,
-              data
-            ]
-          );
+          setMessages((prev) => [
+            ...prev,
+            data,
+          ]);
         }
       }
     );
@@ -84,7 +76,7 @@ export default function DashboardPage() {
     };
   }, [
     senderId,
-    selectedUser
+    selectedUser,
   ]);
 
   //-----------------------------------
@@ -117,7 +109,7 @@ export default function DashboardPage() {
     };
 
   //-----------------------------------
-  // Fetch old messages
+  // Fetch Messages
   //-----------------------------------
   const fetchMessages =
     async (
@@ -142,7 +134,7 @@ export default function DashboardPage() {
     };
 
   //-----------------------------------
-  // Send message
+  // Send Message
   //-----------------------------------
   const sendMessage =
     async () => {
@@ -197,7 +189,7 @@ export default function DashboardPage() {
           fileUrl,
           fileType,
           createdAt:
-            new Date()
+            new Date(),
         };
 
         await axios.post(
@@ -210,18 +202,15 @@ export default function DashboardPage() {
           data
         );
 
-        setMessages(
-          (prev) => [
-            ...prev,
-            data
-          ]
-        );
+        setMessages((prev) => [
+          ...prev,
+          data,
+        ]);
 
         setMessage("");
         setSelectedFile(
           null
         );
-
       } catch (
         error
       ) {
@@ -254,22 +243,43 @@ export default function DashboardPage() {
 
       {/* Sidebar */}
       <div className="w-[80px] bg-[#202C33] flex flex-col items-center py-5 gap-6">
+
+        {/* Voice Call */}
         <Link href="/calls">
           📞
         </Link>
 
+        {/* Video Call */}
         <Link href="/calls/video">
           🎥
         </Link>
 
+        {/* QR */}
         <Link href="/qr">
           📱
         </Link>
 
+        {/* Private Space */}
         <Link href="/private-space">
-          🔒
+          🗂️
         </Link>
 
+        {/* Protection Mode */}
+        <Link href="/protection">
+          🛡️
+        </Link>
+
+        {/* Notifications */}
+        <Link href="/notifications">
+          🔔
+        </Link>
+
+        {/* Settings */}
+        <Link href="/settings">
+          ⚙️
+        </Link>
+
+        {/* Logout */}
         <button
           onClick={
             handleLogout
@@ -334,7 +344,7 @@ export default function DashboardPage() {
                       hour:
                         "2-digit",
                       minute:
-                        "2-digit"
+                        "2-digit",
                     }
                   )}{" "}
                   ✓✓
@@ -346,11 +356,10 @@ export default function DashboardPage() {
 
         {/* Input */}
         <div className="p-4 bg-[#202C33] flex gap-3">
+
           <input
             type="file"
-            onChange={(
-              e
-            ) =>
+            onChange={(e) =>
               setSelectedFile(
                 e.target
                   .files?.[0] ||
@@ -363,9 +372,7 @@ export default function DashboardPage() {
             value={
               message
             }
-            onChange={(
-              e
-            ) =>
+            onChange={(e) =>
               setMessage(
                 e.target
                   .value

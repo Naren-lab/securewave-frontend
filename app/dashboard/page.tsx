@@ -30,7 +30,7 @@ export default function DashboardPage() {
       return;
     }
 
-    fetchUsers();
+    fetchContacts();
 
     socket.on("receive_message", (data) => {
       setMessages((prev) => [...prev, data]);
@@ -41,16 +41,22 @@ export default function DashboardPage() {
     };
   }, [senderId]);
 
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get(
-        "https://securewave-backend-2.onrender.com/api/users"
-      );
-      setUsers(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const fetchContacts = async () => {
+  try {
+    const res = await axios.get(
+      `https://securewave-backend-2.onrender.com/api/contacts/${senderId}`
+    );
+
+    const contacts = res.data.map(
+      (item: any) => item.contactId
+    );
+
+    setUsers(contacts);
+
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   const fetchMessages = async (receiverId: string) => {
     try {

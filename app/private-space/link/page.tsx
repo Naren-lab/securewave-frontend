@@ -20,10 +20,20 @@ export default function LinkDevicePage() {
   const [scannerStarted, setScannerStarted] =
     useState(false);
 
+  const [password, setPassword] =
+    useState("");
+
+  const [otp, setOtp] =
+    useState("");
+
   const currentUser =
     typeof window !== "undefined"
       ? JSON.parse(
-          localStorage.getItem("user") || "{}"
+          localStorage.getItem("user") ||
+            localStorage.getItem(
+              "pendingUser"
+            ) ||
+            "{}"
         )
       : {};
 
@@ -67,19 +77,17 @@ export default function LinkDevicePage() {
               deviceName:
                 navigator.userAgent,
               deviceType:
-                "Browser",
-              qrData:
-                decodedText
+                "Browser"
             }
           );
 
           alert(
-            "QR scanned successfully. Request sent to main device."
+            "QR request sent to main device"
           );
         } catch (error) {
           console.log(error);
           alert(
-            "Failed to send QR request"
+            "QR link failed"
           );
         } finally {
           setLoading(false);
@@ -92,14 +100,14 @@ export default function LinkDevicePage() {
   };
 
   //-----------------------------------
-  // Manual code linking
+  // Manual Link
   //-----------------------------------
   const requestManualLink =
     async () => {
       try {
         if (!manualCode) {
           alert(
-            "Please enter link code"
+            "Enter manual code"
           );
           return;
         }
@@ -113,13 +121,12 @@ export default function LinkDevicePage() {
             deviceName:
               navigator.userAgent,
             deviceType:
-              "Browser",
-            manualCode
+              "Browser"
           }
         );
 
         alert(
-          "Manual link request sent successfully"
+          "Manual link request sent"
         );
 
         setManualCode("");
@@ -134,9 +141,9 @@ export default function LinkDevicePage() {
     };
 
   //-----------------------------------
-  // QR image upload
+  // Upload QR
   //-----------------------------------
-  const handleImageUpload = async (
+  const handleImageUpload = (
     e: any
   ) => {
     const file =
@@ -145,9 +152,84 @@ export default function LinkDevicePage() {
     if (!file) return;
 
     alert(
-      `${file.name} uploaded successfully. QR decoding can be added next.`
+      `${file.name} uploaded successfully`
     );
   };
+
+  //-----------------------------------
+  // Make device main
+  //-----------------------------------
+  const makeThisDeviceMain =
+    async () => {
+      try {
+        if (
+          !password ||
+          !otp
+        ) {
+          alert(
+            "Enter password and OTP"
+          );
+          return;
+        }
+
+        setLoading(true);
+
+        const res =
+          await axios.get(
+            `https://securewave-backend-2.onrender.com/api/devices/${userId}`
+          );
+
+        const currentDevice =
+          res.data.find(
+            (device: any) =>
+              device.deviceName ===
+              navigator.userAgent
+          );
+
+        if (
+          !currentDevice
+        ) {
+          alert(
+            "Current device not found. Link this device first."
+          );
+          return;
+        }
+
+        await axios.post(
+          "https://securewave-backend-2.onrender.com/api/devices/make-main",
+          {
+            userId,
+            deviceId:
+              currentDevice._id,
+            password,
+            otp
+          }
+        );
+
+        alert(
+          "This device is now MAIN DEVICE"
+        );
+
+        router.push(
+          "/dashboard"
+        );
+
+      } catch (
+        error: any
+      ) {
+        console.log(
+          error
+        );
+
+        alert(
+          error.response?.data
+            ?.message ||
+            "Failed to make device main"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <div className="min-h-screen bg-[#0B141A] text-white p-10">
@@ -166,58 +248,50 @@ export default function LinkDevicePage() {
           }
           className="bg-gray-700 px-5 py-2 rounded-lg"
         >
-          Back to Private Space
+          Back
         </button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-4 gap-8">
 
         {/* QR Scanner */}
         <div className="bg-[#111B21] p-6 rounded-xl">
           <h2 className="text-xl mb-4 font-bold">
-            Scan QR Code
+            Scan QR
           </h2>
 
           <button
-            onClick={startScanner}
+            onClick={
+              startScanner
+            }
             className="bg-green-500 px-6 py-3 rounded-lg w-full"
           >
-            Start Camera Scanner
+            Start Scanner
           </button>
 
           <div
             id="reader"
             className="mt-5"
           ></div>
-
-          {scannedResult && (
-            <div className="mt-4">
-              <p className="text-green-400 font-semibold">
-                QR Scanned Successfully
-              </p>
-
-              <p className="text-sm text-gray-400 mt-2 break-all">
-                {scannedResult}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Manual Code */}
         <div className="bg-[#111B21] p-6 rounded-xl">
           <h2 className="text-xl mb-4 font-bold">
-            Enter Manual Code
+            Manual Code
           </h2>
 
           <input
             type="text"
-            placeholder="Enter code"
-            value={manualCode}
+            value={
+              manualCode
+            }
             onChange={(e) =>
               setManualCode(
                 e.target.value
               )
             }
+            placeholder="Enter code"
             className="w-full p-3 rounded-lg text-black"
           />
 
@@ -225,16 +299,16 @@ export default function LinkDevicePage() {
             onClick={
               requestManualLink
             }
-            className="mt-5 bg-blue-500 px-6 py-3 rounded-lg w-full"
+            className="mt-4 bg-blue-500 px-6 py-2 rounded-lg w-full"
           >
-            Submit Code
+            Submit
           </button>
         </div>
 
-        {/* Upload QR Image */}
+        {/* Upload QR */}
         <div className="bg-[#111B21] p-6 rounded-xl">
           <h2 className="text-xl mb-4 font-bold">
-            Upload QR Image
+            Upload QR
           </h2>
 
           <input
@@ -243,18 +317,57 @@ export default function LinkDevicePage() {
             onChange={
               handleImageUpload
             }
-            className="w-full"
+          />
+        </div>
+
+        {/* Make Main */}
+        <div className="bg-[#111B21] p-6 rounded-xl">
+          <h2 className="text-xl mb-4 font-bold text-red-400">
+            Lost Main Device?
+          </h2>
+
+          <input
+            type="password"
+            placeholder="Enter Password"
+            value={password}
+            onChange={(e) =>
+              setPassword(
+                e.target.value
+              )
+            }
+            className="w-full p-3 rounded-lg text-black mb-4"
           />
 
-          <p className="text-gray-400 mt-4 text-sm">
-            Upload screenshot/photo of QR code
+          <input
+            type="text"
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={(e) =>
+              setOtp(
+                e.target.value
+              )
+            }
+            className="w-full p-3 rounded-lg text-black mb-4"
+          />
+
+          <button
+            onClick={
+              makeThisDeviceMain
+            }
+            className="w-full bg-red-500 py-3 rounded-lg"
+          >
+            Make This Device Main
+          </button>
+
+          <p className="text-gray-400 text-sm mt-3">
+            Test OTP: 123456
           </p>
         </div>
       </div>
 
       {loading && (
-        <div className="mt-8 text-center text-green-400 text-lg">
-          Processing request...
+        <div className="mt-8 text-center text-green-400">
+          Processing...
         </div>
       )}
     </div>

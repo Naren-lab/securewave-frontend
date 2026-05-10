@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import Peer from "simple-peer";
 
 const socket = io(
   "https://securewave-backend-2.onrender.com",
@@ -14,23 +15,40 @@ export default function VoiceCallPage() {
   const [stream, setStream] =
     useState<MediaStream | null>(null);
 
-  const [me, setMe] =
-    useState("");
-
   const [usernameToCall, setUsernameToCall] =
     useState("");
 
   const [currentUsername, setCurrentUsername] =
     useState("");
 
+  const [receivingCall, setReceivingCall] =
+    useState(false);
+
+  const [caller, setCaller] =
+    useState("");
+
+  const [callerSignal, setCallerSignal] =
+    useState<any>(null);
+
+  const [callAccepted, setCallAccepted] =
+    useState(false);
+
+  const [callEnded, setCallEnded] =
+    useState(false);
+
   const myAudio =
     useRef<HTMLAudioElement | null>(null);
 
+  const userAudio =
+    useRef<HTMLAudioElement | null>(null);
+
+  const connectionRef =
+    useRef<any>(null);
+
   useEffect(() => {
-    // Get microphone access
     navigator.mediaDevices
       .getUserMedia({
-        audio: true,
+        audio: true
       })
       .then(
         (
@@ -47,15 +65,8 @@ export default function VoiceCallPage() {
               currentStream;
           }
         }
-      )
-      .catch((error) => {
-        console.log(
-          "Mic access error:",
-          error
-        );
-      });
+      );
 
-    // Get logged in user
     const currentUser =
       JSON.parse(
         localStorage.getItem(
@@ -67,26 +78,13 @@ export default function VoiceCallPage() {
       currentUser.name
     );
 
-    // Join socket
     socket.emit(
       "join_user",
       {
         userId:
           currentUser._id,
         username:
-          currentUser.name,
-      }
-    );
-
-    // Receive socket id
-    socket.on(
-      "me",
-      (id: string) => {
-        console.log(
-          "My Socket ID:",
-          id
-        );
-        setMe(id);
+          currentUser.name
       }
     );
 
@@ -94,67 +92,157 @@ export default function VoiceCallPage() {
     socket.on(
       "callUser",
       (data) => {
-        alert(
-          `Incoming call from ${data.from}`
+        setReceivingCall(
+          true
         );
-
-        console.log(
-          "Incoming call:",
-          data
+        setCaller(
+          data.from
+        );
+        setCallerSignal(
+          data.signal
         );
       }
     );
 
     return () => {
-      socket.off("me");
       socket.off(
         "callUser"
       );
     };
   }, []);
 
+  // CALL USER
   const callUser = () => {
-    if (
-      !usernameToCall
-    ) {
-      alert(
-        "Enter username"
-      );
-      return;
-    }
+    const peer =
+      new Peer({
+        initiator: true,
+        trickle: false,
+        stream:
+          stream!,
+      });
 
-    socket.emit(
-      "callUser",
-      {
-        usernameToCall:
-          usernameToCall,
-        signalData:
-          "voice-call-request",
-
-        // FIXED → send username instead of socket id
-        from:
-          currentUsername,
+    peer.on(
+      "signal",
+      (data) => {
+        socket.emit(
+          "callUser",
+          {
+            usernameToCall:
+              usernameToCall,
+            signalData:
+              data,
+            from:
+              currentUsername
+          }
+        );
       }
     );
 
-    alert(
-      `Calling ${usernameToCall}`
+    peer.on(
+      "stream",
+      (
+        remoteStream
+      ) => {
+        if (
+          userAudio.current
+        ) {
+          userAudio.current.srcObject =
+            remoteStream;
+        }
+      }
     );
 
-    console.log(
-      "Calling user:",
-      usernameToCall
+    socket.on(
+      "callAccepted",
+      (
+        signal
+      ) => {
+        setCallAccepted(
+          true
+        );
+        peer.signal(
+          signal
+        );
+      }
     );
+
+    connectionRef.current =
+      peer;
+  };
+
+  // ANSWER CALL
+  const answerCall = () => {
+    setCallAccepted(
+      true
+    );
+
+    const peer =
+      new Peer({
+        initiator: false,
+        trickle: false,
+        stream:
+          stream!,
+      });
+
+    peer.on(
+      "signal",
+      (data) => {
+        socket.emit(
+          "answerCall",
+          {
+            signal:
+              data,
+            to:
+              caller
+          }
+        );
+      }
+    );
+
+    peer.on(
+      "stream",
+      (
+        remoteStream
+      ) => {
+        if (
+          userAudio.current
+        ) {
+          userAudio.current.srcObject =
+            remoteStream;
+        }
+      }
+    );
+
+    peer.signal(
+      callerSignal
+    );
+
+    connectionRef.current =
+      peer;
+  };
+
+  // END CALL
+  const leaveCall = () => {
+    setCallEnded(
+      true
+    );
+
+    if (
+      connectionRef.current
+    ) {
+      connectionRef.current.destroy();
+    }
   };
 
   return (
     <div className="h-screen bg-black text-white flex flex-col justify-center items-center">
+
       <h1 className="text-4xl mb-6 font-bold">
-        SecureWave Voice Call
+        SecureWave Real-Time Voice Call
       </h1>
 
-      <p className="mb-2 text-lg">
-        Your Username:
+      <p className="mb-2">
+        Logged in as:
       </p>
 
       <input
@@ -162,25 +250,11 @@ export default function VoiceCallPage() {
           currentUsername
         }
         readOnly
-        className="bg-white text-black p-3 rounded mb-4 w-80 text-center font-bold"
-      />
-
-      <p className="mb-2 text-lg">
-        Your Socket ID:
-      </p>
-
-      <input
-        value={me}
-        readOnly
         className="bg-white text-black p-3 rounded mb-4 w-80 text-center"
       />
 
-      <p className="mb-2 text-lg">
-        Enter Username to Call:
-      </p>
-
       <input
-        placeholder="Enter username"
+        placeholder="Enter username to call"
         value={
           usernameToCall
         }
@@ -193,16 +267,63 @@ export default function VoiceCallPage() {
       />
 
       <button
-        onClick={callUser}
-        className="bg-green-500 px-6 py-3 rounded text-white font-bold hover:bg-green-600"
+        onClick={
+          callUser
+        }
+        className="bg-green-500 px-6 py-3 rounded"
       >
-        Call User
+        Call
       </button>
 
+      {receivingCall &&
+        !callAccepted && (
+          <div className="mt-6">
+            <h2>
+              Incoming call
+              from{" "}
+              {
+                caller
+              }
+            </h2>
+
+            <button
+              onClick={
+                answerCall
+              }
+              className="bg-blue-500 px-6 py-2 rounded mt-2"
+            >
+              Answer
+            </button>
+          </div>
+        )}
+
+      {callAccepted &&
+        !callEnded && (
+          <button
+            onClick={
+              leaveCall
+            }
+            className="bg-red-500 px-6 py-2 rounded mt-4"
+          >
+            End Call
+          </button>
+        )}
+
+      {/* Local audio */}
       <audio
-        ref={myAudio}
+        ref={
+          myAudio
+        }
         autoPlay
         muted
+      />
+
+      {/* Remote audio */}
+      <audio
+        ref={
+          userAudio
+        }
+        autoPlay
       />
     </div>
   );

@@ -9,7 +9,6 @@ const socket = io(
 );
 
 export default function VoiceCallPage() {
-  // FIXED typing
   const [stream, setStream] =
     useState<MediaStream | null>(null);
 
@@ -19,7 +18,6 @@ export default function VoiceCallPage() {
   const [idToCall, setIdToCall] =
     useState("");
 
-  // FIXED typing
   const myAudio =
     useRef<HTMLAudioElement | null>(null);
 
@@ -88,20 +86,22 @@ export default function VoiceCallPage() {
 
   return (
     <div className="h-screen bg-black text-white flex flex-col justify-center items-center">
-      <h1 className="text-4xl mb-6">
+      <h1 className="text-4xl mb-6 font-bold">
         SecureWave Voice Call
       </h1>
 
-      <p className="mb-2">
+      <p className="mb-2 text-lg">
         Your Call ID:
       </p>
 
+      {/* Fixed visibility */}
       <input
         value={me}
         readOnly
-        className="text-black p-2 rounded mb-4 w-80"
+        className="bg-white text-black p-3 rounded mb-4 w-80 text-center font-bold"
       />
 
+      {/* Fixed visibility */}
       <input
         placeholder="Enter ID to call"
         value={idToCall}
@@ -110,12 +110,12 @@ export default function VoiceCallPage() {
             e.target.value
           )
         }
-        className="text-black p-2 rounded mb-4 w-80"
+        className="bg-white text-black p-3 rounded mb-4 w-80 text-center"
       />
 
       <button
         onClick={callUser}
-        className="bg-green-500 px-6 py-2 rounded"
+        className="bg-green-500 px-6 py-3 rounded text-white font-bold hover:bg-green-600"
       >
         Call
       </button>

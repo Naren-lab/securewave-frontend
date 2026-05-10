@@ -20,11 +20,14 @@ export default function VoiceCallPage() {
   const [usernameToCall, setUsernameToCall] =
     useState("");
 
+  const [currentUsername, setCurrentUsername] =
+    useState("");
+
   const myAudio =
     useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Get microphone
+    // Get microphone access
     navigator.mediaDevices
       .getUserMedia({
         audio: true,
@@ -52,7 +55,7 @@ export default function VoiceCallPage() {
         );
       });
 
-    // Get current logged user
+    // Get logged in user
     const currentUser =
       JSON.parse(
         localStorage.getItem(
@@ -60,7 +63,11 @@ export default function VoiceCallPage() {
         ) || "{}"
       );
 
-    // Join socket using username
+    setCurrentUsername(
+      currentUser.name
+    );
+
+    // Join socket
     socket.emit(
       "join_user",
       {
@@ -71,7 +78,7 @@ export default function VoiceCallPage() {
       }
     );
 
-    // Receive socket ID
+    // Receive socket id
     socket.on(
       "me",
       (id: string) => {
@@ -83,7 +90,7 @@ export default function VoiceCallPage() {
       }
     );
 
-    // Receive incoming call
+    // Incoming call
     socket.on(
       "callUser",
       (data) => {
@@ -106,7 +113,6 @@ export default function VoiceCallPage() {
     };
   }, []);
 
-  // Call user by username
   const callUser = () => {
     if (
       !usernameToCall
@@ -124,7 +130,10 @@ export default function VoiceCallPage() {
           usernameToCall,
         signalData:
           "voice-call-request",
-        from: me,
+
+        // FIXED → send username instead of socket id
+        from:
+          currentUsername,
       }
     );
 
@@ -145,17 +154,29 @@ export default function VoiceCallPage() {
       </h1>
 
       <p className="mb-2 text-lg">
+        Your Username:
+      </p>
+
+      <input
+        value={
+          currentUsername
+        }
+        readOnly
+        className="bg-white text-black p-3 rounded mb-4 w-80 text-center font-bold"
+      />
+
+      <p className="mb-2 text-lg">
         Your Socket ID:
       </p>
 
       <input
         value={me}
         readOnly
-        className="bg-white text-black p-3 rounded mb-4 w-80 text-center font-bold"
+        className="bg-white text-black p-3 rounded mb-4 w-80 text-center"
       />
 
       <p className="mb-2 text-lg">
-        Enter Username:
+        Enter Username to Call:
       </p>
 
       <input

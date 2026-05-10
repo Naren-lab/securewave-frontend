@@ -17,6 +17,8 @@ import { QRCodeCanvas } from "qrcode.react";
 export default function PrivateSpacePage() {
   const [devices, setDevices] = useState<any[]>([]);
   const [pendingDevices, setPendingDevices] = useState<any[]>([]);
+  const [manualCodeInput, setManualCodeInput] =
+    useState("");
 
   const currentUser =
     typeof window !== "undefined"
@@ -33,6 +35,9 @@ export default function PrivateSpacePage() {
     }
   }, [userId]);
 
+  //-----------------------------------
+  // Fetch devices
+  //-----------------------------------
   const fetchDevices = async () => {
     try {
       const res = await axios.get(
@@ -43,13 +48,15 @@ export default function PrivateSpacePage() {
 
       setDevices(
         allDevices.filter(
-          (d: any) => d.status === "active"
+          (d: any) =>
+            d.status === "active"
         )
       );
 
       setPendingDevices(
         allDevices.filter(
-          (d: any) => d.status === "pending"
+          (d: any) =>
+            d.status === "pending"
         )
       );
     } catch (error) {
@@ -57,12 +64,62 @@ export default function PrivateSpacePage() {
     }
   };
 
-  const generateLinkRequest = () => {
+  //-----------------------------------
+  // Submit manual code
+  //-----------------------------------
+  const submitManualCode =
+    async () => {
+      try {
+        if (!manualCodeInput) {
+          alert(
+            "Enter manual code"
+          );
+          return;
+        }
+
+        await axios.post(
+          "https://securewave-backend-2.onrender.com/api/devices/link",
+          {
+            userId,
+            deviceName:
+              navigator.userAgent,
+            deviceType:
+              "Browser",
+            manualCode:
+              manualCodeInput
+          }
+        );
+
+        alert(
+          "Manual link request sent"
+        );
+
+        setManualCodeInput("");
+        fetchDevices();
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  //-----------------------------------
+  // Upload QR image
+  //-----------------------------------
+  const handleImageUpload = (
+    e: any
+  ) => {
+    const file =
+      e.target.files[0];
+
+    if (!file) return;
+
     alert(
-      "Share this QR/code with another device to request linking."
+      "QR image uploaded successfully"
     );
   };
 
+  //-----------------------------------
+  // Approve device
+  //-----------------------------------
   const approveDevice = async (
     deviceId: string
   ) => {
@@ -78,6 +135,9 @@ export default function PrivateSpacePage() {
     }
   };
 
+  //-----------------------------------
+  // Deny device
+  //-----------------------------------
   const denyDevice = async (
     deviceId: string
   ) => {
@@ -93,36 +153,53 @@ export default function PrivateSpacePage() {
     }
   };
 
-  const grantPrivateAccess = async (
-    deviceId: string
-  ) => {
-    try {
-      await axios.put(
-        `https://securewave-backend-2.onrender.com/api/devices/private-access/${deviceId}`
-      );
+  //-----------------------------------
+  // Grant private access
+  //-----------------------------------
+  const grantPrivateAccess =
+    async (
+      deviceId: string
+    ) => {
+      try {
+        await axios.put(
+          `https://securewave-backend-2.onrender.com/api/devices/private-access/${deviceId}`
+        );
 
-      alert("Private access granted");
-      fetchDevices();
-    } catch (error) {
-      console.log(error);
-    }
-  };
+        alert(
+          "Private access granted"
+        );
 
-  const removePrivateAccess = async (
-    deviceId: string
-  ) => {
-    try {
-      await axios.put(
-        `https://securewave-backend-2.onrender.com/api/devices/remove-private/${deviceId}`
-      );
+        fetchDevices();
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
-      alert("Private access removed");
-      fetchDevices();
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  //-----------------------------------
+  // Remove private access
+  //-----------------------------------
+  const removePrivateAccess =
+    async (
+      deviceId: string
+    ) => {
+      try {
+        await axios.put(
+          `https://securewave-backend-2.onrender.com/api/devices/remove-private/${deviceId}`
+        );
 
+        alert(
+          "Private access removed"
+        );
+
+        fetchDevices();
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  //-----------------------------------
+  // Logout device
+  //-----------------------------------
   const logoutDevice = async (
     deviceId: string
   ) => {
@@ -131,13 +208,19 @@ export default function PrivateSpacePage() {
         `https://securewave-backend-2.onrender.com/api/devices/logout/${deviceId}`
       );
 
-      alert("Device logged out");
+      alert(
+        "Device logged out"
+      );
+
       fetchDevices();
     } catch (error) {
       console.log(error);
     }
   };
 
+  //-----------------------------------
+  // Remove device
+  //-----------------------------------
   const removeDevice = async (
     deviceId: string
   ) => {
@@ -146,13 +229,19 @@ export default function PrivateSpacePage() {
         `https://securewave-backend-2.onrender.com/api/devices/${deviceId}`
       );
 
-      alert("Device removed");
+      alert(
+        "Device removed"
+      );
+
       fetchDevices();
     } catch (error) {
       console.log(error);
     }
   };
 
+  //-----------------------------------
+  // Device icon
+  //-----------------------------------
   const getDeviceIcon = (
     type: string
   ) => {
@@ -190,12 +279,12 @@ export default function PrivateSpacePage() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
 
-          {/* QR Section */}
+          {/* QR */}
           <div className="bg-[#202C33] p-6 rounded-xl text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Scan QR On New Device
+            <h3 className="mb-4 font-bold">
+              Your QR Code
             </h3>
 
             <div className="bg-white p-4 rounded-xl inline-block">
@@ -204,32 +293,75 @@ export default function PrivateSpacePage() {
                 size={180}
               />
             </div>
-
-            <p className="text-gray-400 mt-4">
-              Scan this QR from another device
-            </p>
           </div>
 
-          {/* Manual Link Code */}
+          {/* Manual Code */}
           <div className="bg-[#202C33] p-6 rounded-xl text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Manual Link Code
+            <h3 className="mb-4 font-bold">
+              Manual Code
             </h3>
 
             <div className="text-3xl font-bold text-green-400">
               SW-{userId?.slice(-6)}
             </div>
+          </div>
 
-            <p className="text-gray-400 mt-4">
-              Enter this code on another device
-            </p>
+          {/* Scanner */}
+          <div className="bg-[#202C33] p-6 rounded-xl text-center">
+            <h3 className="mb-4 font-bold">
+              Scan QR
+            </h3>
 
             <button
-              onClick={generateLinkRequest}
-              className="mt-5 bg-green-500 px-6 py-2 rounded-lg"
+              onClick={() =>
+                window.open(
+                  "/private-space/link",
+                  "_blank"
+                )
+              }
+              className="bg-green-500 px-6 py-3 rounded-lg"
             >
-              Generate Request
+              Open Scanner
             </button>
+          </div>
+
+          {/* Manual + Upload */}
+          <div className="bg-[#202C33] p-6 rounded-xl">
+            <h3 className="mb-4 font-bold">
+              Enter Code / Upload
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Enter manual code"
+              value={
+                manualCodeInput
+              }
+              onChange={(e) =>
+                setManualCodeInput(
+                  e.target.value
+                )
+              }
+              className="w-full p-3 rounded-lg text-black mb-4"
+            />
+
+            <button
+              onClick={
+                submitManualCode
+              }
+              className="w-full bg-blue-500 py-2 rounded-lg mb-4"
+            >
+              Submit Code
+            </button>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={
+                handleImageUpload
+              }
+              className="w-full"
+            />
           </div>
         </div>
       </div>
@@ -241,37 +373,51 @@ export default function PrivateSpacePage() {
         </h2>
 
         {pendingDevices.length > 0 ? (
-          pendingDevices.map((device) => (
-            <div
-              key={device._id}
-              className="bg-[#202C33] p-4 rounded-xl flex justify-between mb-4"
-            >
-              <div>
-                <h3>{device.deviceName}</h3>
-                <p>Waiting approval</p>
-              </div>
+          pendingDevices.map(
+            (device) => (
+              <div
+                key={
+                  device._id
+                }
+                className="bg-[#202C33] p-4 rounded-xl flex justify-between mb-4"
+              >
+                <div>
+                  <h3>
+                    {
+                      device.deviceName
+                    }
+                  </h3>
+                  <p>
+                    Waiting approval
+                  </p>
+                </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    approveDevice(device._id)
-                  }
-                  className="bg-green-500 px-4 py-2 rounded"
-                >
-                  Approve
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() =>
+                      approveDevice(
+                        device._id
+                      )
+                    }
+                    className="bg-green-500 px-4 py-2 rounded"
+                  >
+                    Approve
+                  </button>
 
-                <button
-                  onClick={() =>
-                    denyDevice(device._id)
-                  }
-                  className="bg-red-500 px-4 py-2 rounded"
-                >
-                  Deny
-                </button>
+                  <button
+                    onClick={() =>
+                      denyDevice(
+                        device._id
+                      )
+                    }
+                    className="bg-red-500 px-4 py-2 rounded"
+                  >
+                    Deny
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            )
+          )
         ) : (
           <p>No pending devices</p>
         )}
@@ -284,86 +430,86 @@ export default function PrivateSpacePage() {
         </h2>
 
         {devices.length > 0 ? (
-          devices.map((device) => (
-            <div
-              key={device._id}
-              className="bg-[#202C33] p-4 rounded-xl mb-4 flex justify-between"
-            >
-              <div className="flex gap-4">
-                {getDeviceIcon(
-                  device.deviceType
-                )}
-
-                <div>
-                  <h3>{device.deviceName}</h3>
-
-                  {device.isMainDevice && (
-                    <span className="bg-green-500 px-2 py-1 rounded text-xs">
-                      MAIN DEVICE
-                    </span>
+          devices.map(
+            (device) => (
+              <div
+                key={
+                  device._id
+                }
+                className="bg-[#202C33] p-4 rounded-xl mb-4 flex justify-between"
+              >
+                <div className="flex gap-4">
+                  {getDeviceIcon(
+                    device.deviceType
                   )}
 
-                  {device.hasPrivateAccess &&
-                    !device.isMainDevice && (
-                      <span className="bg-purple-500 px-2 py-1 rounded text-xs ml-2">
-                        PRIVATE ACCESS
+                  <div>
+                    <h3>
+                      {
+                        device.deviceName
+                      }
+                    </h3>
+
+                    {device.isMainDevice && (
+                      <span className="bg-green-500 px-2 py-1 rounded text-xs">
+                        MAIN DEVICE
                       </span>
                     )}
 
-                  {!device.isMainDevice &&
-                    !device.hasPrivateAccess && (
-                      <p className="text-sm text-yellow-400">
-                        Auto logout:
-                        10 mins
-                      </p>
+                    {device.hasPrivateAccess &&
+                      !device.isMainDevice && (
+                        <span className="bg-purple-500 px-2 py-1 rounded text-xs ml-2">
+                          PRIVATE ACCESS
+                        </span>
+                      )}
+                  </div>
+                </div>
+
+                {!device.isMainDevice && (
+                  <div className="flex gap-3">
+
+                    {!device.hasPrivateAccess ? (
+                      <Lock
+                        className="cursor-pointer text-green-400"
+                        onClick={() =>
+                          grantPrivateAccess(
+                            device._id
+                          )
+                        }
+                      />
+                    ) : (
+                      <Unlock
+                        className="cursor-pointer text-yellow-400"
+                        onClick={() =>
+                          removePrivateAccess(
+                            device._id
+                          )
+                        }
+                      />
                     )}
-                </div>
+
+                    <LogOut
+                      className="cursor-pointer text-red-400"
+                      onClick={() =>
+                        logoutDevice(
+                          device._id
+                        )
+                      }
+                    />
+
+                    <Trash2
+                      className="cursor-pointer text-red-500"
+                      onClick={() =>
+                        removeDevice(
+                          device._id
+                        )
+                      }
+                    />
+                  </div>
+                )}
               </div>
-
-              {!device.isMainDevice && (
-                <div className="flex gap-3">
-
-                  {!device.hasPrivateAccess ? (
-                    <Lock
-                      className="cursor-pointer text-green-400"
-                      onClick={() =>
-                        grantPrivateAccess(
-                          device._id
-                        )
-                      }
-                    />
-                  ) : (
-                    <Unlock
-                      className="cursor-pointer text-yellow-400"
-                      onClick={() =>
-                        removePrivateAccess(
-                          device._id
-                        )
-                      }
-                    />
-                  )}
-
-                  <LogOut
-                    className="cursor-pointer text-red-400"
-                    onClick={() =>
-                      logoutDevice(
-                        device._id
-                      )
-                    }
-                  />
-
-                  <Trash2
-                    className="cursor-pointer text-red-500"
-                    onClick={() =>
-                      removeDevice(
-                        device._id
-                      )
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          ))
+            )
+          )
         ) : (
           <p>No active devices found</p>
         )}

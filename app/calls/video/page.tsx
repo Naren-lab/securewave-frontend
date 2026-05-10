@@ -51,6 +51,7 @@ export default function VideoCallPage() {
     useRef<any>(null);
 
   useEffect(() => {
+    // Camera + mic access
     navigator.mediaDevices
       .getUserMedia({
         video: true,
@@ -79,6 +80,7 @@ export default function VideoCallPage() {
         );
       });
 
+    // Current logged user
     const currentUser =
       JSON.parse(
         localStorage.getItem(
@@ -100,15 +102,18 @@ export default function VideoCallPage() {
       }
     );
 
+    // Receive call
     socket.on(
       "videoCallUser",
       (data) => {
         setReceivingCall(
           true
         );
+
         setCaller(
           data.from
         );
+
         setCallerSignal(
           data.signal
         );
@@ -180,6 +185,7 @@ export default function VideoCallPage() {
         setCallAccepted(
           true
         );
+
         peer.signal(
           signal
         );
@@ -261,9 +267,7 @@ export default function VideoCallPage() {
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         {callAccepted ? (
           <video
-            ref={
-              userVideo
-            }
+            ref={userVideo}
             autoPlay
             playsInline
             className="w-full h-full object-cover"
@@ -276,7 +280,7 @@ export default function VideoCallPage() {
       </div>
 
       {/* Self Video */}
-      <div className="absolute top-5 right-5 w-60 h-40 bg-gray-700 rounded-xl overflow-hidden">
+      <div className="absolute top-5 right-5 z-40 w-60 h-40 bg-gray-700 rounded-xl overflow-hidden shadow-lg">
         <video
           ref={myVideo}
           autoPlay
@@ -286,26 +290,23 @@ export default function VideoCallPage() {
         />
       </div>
 
-      {/* Username input */}
-      <div className="absolute top-5 left-5">
+      {/* FIXED Username Input */}
+      <div className="absolute top-5 left-5 z-50 flex gap-3 bg-[#1f1f1f] p-4 rounded-xl shadow-lg">
+        
         <input
           placeholder="Enter username"
-          value={
-            usernameToCall
-          }
+          value={usernameToCall}
           onChange={(e) =>
             setUsernameToCall(
               e.target.value
             )
           }
-          className="text-black p-2 rounded"
+          className="bg-white text-black p-3 rounded w-64 outline-none"
         />
 
         <button
-          onClick={
-            callUser
-          }
-          className="ml-2 bg-green-500 px-4 py-2 rounded"
+          onClick={callUser}
+          className="bg-green-500 px-5 py-3 rounded font-bold hover:bg-green-600"
         >
           Call
         </button>
@@ -314,17 +315,14 @@ export default function VideoCallPage() {
       {/* Incoming call */}
       {receivingCall &&
         !callAccepted && (
-          <div className="absolute top-24 left-5 bg-gray-800 p-4 rounded">
+          <div className="absolute top-24 left-5 z-50 bg-gray-800 p-4 rounded-xl shadow-lg">
             <p>
-              Incoming call
-              from{" "}
+              Incoming call from{" "}
               {caller}
             </p>
 
             <button
-              onClick={
-                answerCall
-              }
+              onClick={answerCall}
               className="bg-blue-500 px-4 py-2 rounded mt-2"
             >
               Answer
@@ -335,7 +333,7 @@ export default function VideoCallPage() {
       {/* Controls */}
       {callAccepted &&
         !callEnded && (
-          <div className="absolute bottom-10 w-full flex justify-center gap-8">
+          <div className="absolute bottom-10 w-full flex justify-center gap-8 z-50">
             <button className="bg-gray-700 p-4 rounded-full">
               <Mic />
             </button>
@@ -345,9 +343,7 @@ export default function VideoCallPage() {
             </button>
 
             <button
-              onClick={
-                leaveCall
-              }
+              onClick={leaveCall}
               className="bg-red-500 p-4 rounded-full"
             >
               <PhoneOff />

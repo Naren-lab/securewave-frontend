@@ -32,43 +32,57 @@ export default function DashboardPage() {
 
     fetchContacts();
 
+    // Register current user socket
+    socket.emit("registerUser", senderId);
+
     socket.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, data]);
+      if (
+        selectedUser &&
+        (
+          data.sender === selectedUser._id ||
+          data.receiver === selectedUser._id
+        )
+      ) {
+        setMessages((prev) => [...prev, data]);
+      }
     });
 
     return () => {
       socket.off("receive_message");
     };
-  }, [senderId]);
+  }, [senderId, selectedUser]);
 
+  // Fetch only added contacts
   const fetchContacts = async () => {
-  try {
-    const res = await axios.get(
-      `https://securewave-backend-2.onrender.com/api/contacts/${senderId}`
-    );
+    try {
+      const res = await axios.get(
+        `https://securewave-backend-2.onrender.com/api/contacts/${senderId}`
+      );
 
-    const contacts = res.data.map(
-      (item: any) => item.contactId
-    );
+      const contacts = res.data.map(
+        (item: any) => item.contactId
+      );
 
-    setUsers(contacts);
+      setUsers(contacts);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-  } catch (error) {
-    console.log(error);
-  }
-};
-
+  // Fetch old messages
   const fetchMessages = async (receiverId: string) => {
     try {
       const res = await axios.get(
         `https://securewave-backend-2.onrender.com/api/chat/messages/${senderId}/${receiverId}`
       );
+
       setMessages(res.data);
     } catch (error) {
       console.log(error);
     }
   };
 
+  // Send message
   const sendMessage = async () => {
     if (!message && !selectedFile) return;
     if (!selectedUser) return;
@@ -76,39 +90,50 @@ export default function DashboardPage() {
     let fileUrl = "";
     let fileType = "";
 
-    if (selectedFile) {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+    try {
+      // Upload file if selected
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
 
-      const uploadRes = await axios.post(
-        "https://securewave-backend-2.onrender.com/api/upload",
-        formData
+        const uploadRes = await axios.post(
+          "https://securewave-backend-2.onrender.com/api/upload",
+          formData
+        );
+
+        fileUrl = uploadRes.data.fileUrl;
+        fileType = uploadRes.data.fileType;
+      }
+
+      const data = {
+        sender: senderId,
+        receiver: selectedUser._id,
+        message,
+        fileUrl,
+        fileType,
+        createdAt: new Date(),
+      };
+
+      await axios.post(
+        "https://securewave-backend-2.onrender.com/api/chat/send",
+        data
       );
 
-      fileUrl = uploadRes.data.fileUrl;
-      fileType = uploadRes.data.fileType;
+      // Send through socket
+      socket.emit("send_message", data);
+
+      // Add sender message instantly
+      setMessages((prev) => [...prev, data]);
+
+      setMessage("");
+      setSelectedFile(null);
+
+    } catch (error) {
+      console.log(error);
     }
-
-    const data = {
-      sender: senderId,
-      receiver: selectedUser._id,
-      message,
-      fileUrl,
-      fileType,
-    };
-
-    await axios.post(
-      "https://securewave-backend-2.onrender.com/api/chat/send",
-      data
-    );
-
-    socket.emit("send_message", data);
-
-    setMessages((prev) => [...prev, data]);
-    setMessage("");
-    setSelectedFile(null);
   };
 
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -118,7 +143,7 @@ export default function DashboardPage() {
   return (
     <div className="h-screen flex bg-[#111B21] text-white overflow-hidden">
 
-      {/* Left Icon Sidebar */}
+      {/* Left Sidebar */}
       <div className="w-[80px] bg-[#202C33] flex flex-col items-center py-5 gap-6">
         <div className="w-12 h-12 bg-green-500 rounded-full"></div>
 
@@ -140,7 +165,6 @@ export default function DashboardPage() {
       {/* Chat List */}
       <div className="w-[30%] bg-[#111B21] border-r border-gray-700 flex flex-col">
 
-        {/* Search */}
         <div className="p-4">
           <input
             placeholder="Search chats..."
@@ -148,33 +172,30 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Users */}
         <div className="flex-1 overflow-y-auto px-3">
-          {users
-            .filter((user) => user._id !== senderId)
-            .map((user) => (
-              <div
-                key={user._id}
-                onClick={() => {
-                  setSelectedUser(user);
-                  fetchMessages(user._id);
-                }}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#202C33] cursor-pointer mb-2"
-              >
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center font-bold">
-                  {user.name?.charAt(0)}
-                </div>
-
-                <div>
-                  <h2 className="font-semibold">
-                    {user.name}
-                  </h2>
-                  <p className="text-sm text-gray-400">
-                    Click to chat
-                  </p>
-                </div>
+          {users.map((user) => (
+            <div
+              key={user._id}
+              onClick={() => {
+                setSelectedUser(user);
+                fetchMessages(user._id);
+              }}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#202C33] cursor-pointer mb-2"
+            >
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center font-bold">
+                {user.name?.charAt(0)}
               </div>
-            ))}
+
+              <div>
+                <h2 className="font-semibold">
+                  {user.name}
+                </h2>
+                <p className="text-sm text-gray-400">
+                  Click to chat
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -192,6 +213,7 @@ export default function DashboardPage() {
                   ? selectedUser.name
                   : "Select Chat"}
               </h2>
+
               <p className="text-green-400 text-sm">
                 Online
               </p>
@@ -216,8 +238,23 @@ export default function DashboardPage() {
                   : "bg-[#202C33]"
               }`}
             >
-              {msg.message && <p>{msg.message}</p>}
+              {/* Text Message */}
+              {msg.message && (
+                <div>
+                  <p>{msg.message}</p>
 
+                  <div className="text-xs text-right mt-1 opacity-70">
+                    {new Date(
+                      msg.createdAt || Date.now()
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })} ✓✓
+                  </div>
+                </div>
+              )}
+
+              {/* Image */}
               {msg.fileUrl &&
                 msg.fileType?.startsWith("image") && (
                   <img
@@ -226,6 +263,7 @@ export default function DashboardPage() {
                   />
                 )}
 
+              {/* Video */}
               {msg.fileUrl &&
                 msg.fileType?.startsWith("video") && (
                   <video controls className="mt-2 rounded-lg">
@@ -235,6 +273,7 @@ export default function DashboardPage() {
                   </video>
                 )}
 
+              {/* Audio */}
               {msg.fileUrl &&
                 msg.fileType?.startsWith("audio") && (
                   <audio controls className="mt-2 w-full">
@@ -244,6 +283,7 @@ export default function DashboardPage() {
                   </audio>
                 )}
 
+              {/* Documents */}
               {msg.fileUrl &&
                 !msg.fileType?.startsWith("image") &&
                 !msg.fileType?.startsWith("video") &&
@@ -260,7 +300,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Input */}
+        {/* Input Section */}
         <div className="p-4 bg-[#202C33] flex items-center gap-3">
           <input
             type="file"

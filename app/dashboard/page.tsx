@@ -35,8 +35,7 @@ export default function DashboardPage() {
         )
       : {};
 
-  const senderId =
-    currentUser?._id;
+  const senderId = currentUser?._id;
 
   //-----------------------------------
   // Initial Load
@@ -50,9 +49,9 @@ export default function DashboardPage() {
     fetchContacts();
 
     socket.emit("join_user", {
-  userId: senderId,
-  username: currentUser.name,
-});
+      userId: senderId,
+      username: currentUser.name,
+    });
 
     socket.on(
       "receive_message",
@@ -77,10 +76,7 @@ export default function DashboardPage() {
         "receive_message"
       );
     };
-  }, [
-    senderId,
-    selectedUser,
-  ]);
+  }, [senderId, selectedUser]);
 
   //-----------------------------------
   // Fetch Contacts
@@ -99,15 +95,9 @@ export default function DashboardPage() {
               item.contactId
           );
 
-        setUsers(
-          contacts
-        );
-      } catch (
-        error
-      ) {
-        console.log(
-          error
-        );
+        setUsers(contacts);
+      } catch (error) {
+        console.log(error);
       }
     };
 
@@ -127,12 +117,8 @@ export default function DashboardPage() {
         setMessages(
           res.data
         );
-      } catch (
-        error
-      ) {
-        console.log(
-          error
-        );
+      } catch (error) {
+        console.log(error);
       }
     };
 
@@ -150,16 +136,12 @@ export default function DashboardPage() {
       if (!selectedUser)
         return;
 
-      let fileUrl =
-        "";
-      let fileType =
-        "";
+      let fileUrl = "";
+      let fileType = "";
 
       try {
         // Upload file
-        if (
-          selectedFile
-        ) {
+        if (selectedFile) {
           const formData =
             new FormData();
 
@@ -211,12 +193,8 @@ export default function DashboardPage() {
         setSelectedFile(
           null
         );
-      } catch (
-        error
-      ) {
-        console.log(
-          error
-        );
+      } catch (error) {
+        console.log(error);
       }
     };
 
@@ -252,50 +230,38 @@ export default function DashboardPage() {
         <Link href="/settings">⚙️</Link>
 
         <button
-          onClick={
-            handleLogout
-          }
+          onClick={handleLogout}
           className="mt-auto bg-red-500 px-3 py-2 rounded-lg"
         >
           Logout
         </button>
       </div>
 
-      {/* Contact List */}
+      {/* Contacts */}
       <div className="w-[30%] bg-[#111B21] border-r border-gray-700">
-        {users.map(
-          (user) => (
-            <div
-              key={
+        {users.map((user) => (
+          <div
+            key={user._id}
+            onClick={() => {
+              setSelectedUser(user);
+              fetchMessages(
                 user._id
-              }
-              onClick={() => {
-                setSelectedUser(
-                  user
-                );
-                fetchMessages(
-                  user._id
-                );
-              }}
-              className="p-4 cursor-pointer hover:bg-[#202C33]"
-            >
-              {user.name}
-            </div>
-          )
-        )}
+              );
+            }}
+            className="p-4 cursor-pointer hover:bg-[#202C33]"
+          >
+            {user.name}
+          </div>
+        ))}
       </div>
 
-      {/* Chat Area */}
+      {/* Chat Section */}
       <div className="w-[70%] flex flex-col">
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-5">
-
           {messages.map(
-            (
-              msg,
-              index
-            ) => (
+            (msg, index) => (
               <div
                 key={index}
                 className={`mb-4 max-w-sm p-3 rounded-xl ${
@@ -305,23 +271,23 @@ export default function DashboardPage() {
                     : "bg-[#202C33]"
                 }`}
               >
-                {/* IMAGE FILE */}
+                {/* IMAGE */}
                 {msg.fileType ===
                   "image" &&
                   msg.fileUrl && (
                     <img
-                      src={`https://securewave-backend-2.onrender.com/${msg.fileUrl}`}
+                      src={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
                       alt="shared image"
                       className="w-64 rounded-lg mb-2"
                     />
                   )}
 
-                {/* DOCUMENT FILE */}
+                {/* DOCUMENT */}
                 {msg.fileType ===
                   "document" &&
                   msg.fileUrl && (
                     <a
-                      href={`https://securewave-backend-2.onrender.com/${msg.fileUrl}`}
+                      href={`https://securewave-backend-2.onrender.com${msg.fileUrl}`}
                       target="_blank"
                       className="text-blue-300 underline block mb-2"
                     >
@@ -329,13 +295,9 @@ export default function DashboardPage() {
                     </a>
                   )}
 
-                {/* TEXT MESSAGE */}
+                {/* TEXT */}
                 {msg.message && (
-                  <p>
-                    {
-                      msg.message
-                    }
-                  </p>
+                  <p>{msg.message}</p>
                 )}
 
                 {/* TIME */}
@@ -358,9 +320,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Input Section */}
+        {/* Input */}
         <div className="p-4 bg-[#202C33] flex gap-3">
-
           <input
             type="file"
             onChange={(e) =>
@@ -373,13 +334,10 @@ export default function DashboardPage() {
           />
 
           <input
-            value={
-              message
-            }
+            value={message}
             onChange={(e) =>
               setMessage(
-                e.target
-                  .value
+                e.target.value
               )
             }
             className="flex-1 p-3 rounded-full bg-[#2A3942]"

@@ -49,10 +49,10 @@ export default function DashboardPage() {
 
     fetchContacts();
 
-    socket.emit(
-      "join_user",
-      senderId
-    );
+    socket.emit("join_user", {
+  userId: senderId,
+  username: currentUser.name,
+});
 
     socket.on(
       "receive_message",

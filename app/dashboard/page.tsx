@@ -38,6 +38,9 @@ export default function DashboardPage() {
   const senderId =
     currentUser?._id;
 
+  //-----------------------------------
+  // Initial Load
+  //-----------------------------------
   useEffect(() => {
     if (!senderId) {
       router.push("/login");
@@ -153,6 +156,7 @@ export default function DashboardPage() {
         "";
 
       try {
+        // Upload file
         if (
           selectedFile
         ) {
@@ -180,10 +184,6 @@ export default function DashboardPage() {
         const data = {
           senderId,
           receiverId:
-            selectedUser._id,
-          sender:
-            senderId,
-          receiver:
             selectedUser._id,
           message,
           fileUrl,
@@ -243,43 +243,14 @@ export default function DashboardPage() {
 
       {/* Sidebar */}
       <div className="w-[80px] bg-[#202C33] flex flex-col items-center py-5 gap-6">
+        <Link href="/calls">📞</Link>
+        <Link href="/calls/video">🎥</Link>
+        <Link href="/qr">📱</Link>
+        <Link href="/private-space">🗂️</Link>
+        <Link href="/protection">🛡️</Link>
+        <Link href="/notifications">🔔</Link>
+        <Link href="/settings">⚙️</Link>
 
-        {/* Voice Call */}
-        <Link href="/calls">
-          📞
-        </Link>
-
-        {/* Video Call */}
-        <Link href="/calls/video">
-          🎥
-        </Link>
-
-        {/* QR */}
-        <Link href="/qr">
-          📱
-        </Link>
-
-        {/* Private Space */}
-        <Link href="/private-space">
-          🗂️
-        </Link>
-
-        {/* Protection Mode */}
-        <Link href="/protection">
-          🛡️
-        </Link>
-
-        {/* Notifications */}
-        <Link href="/notifications">
-          🔔
-        </Link>
-
-        {/* Settings */}
-        <Link href="/settings">
-          ⚙️
-        </Link>
-
-        {/* Logout */}
         <button
           onClick={
             handleLogout
@@ -319,6 +290,7 @@ export default function DashboardPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-5">
+
           {messages.map(
             (
               msg,
@@ -326,16 +298,48 @@ export default function DashboardPage() {
             ) => (
               <div
                 key={index}
-                className={`mb-3 p-3 rounded-xl max-w-sm ${
+                className={`mb-4 max-w-sm p-3 rounded-xl ${
                   msg.senderId ===
                   senderId
                     ? "bg-green-500 ml-auto"
                     : "bg-[#202C33]"
                 }`}
               >
-                {msg.message}
+                {/* IMAGE FILE */}
+                {msg.fileType ===
+                  "image" &&
+                  msg.fileUrl && (
+                    <img
+                      src={`https://securewave-backend-2.onrender.com/${msg.fileUrl}`}
+                      alt="shared image"
+                      className="w-64 rounded-lg mb-2"
+                    />
+                  )}
 
-                <div className="text-xs mt-1 text-right">
+                {/* DOCUMENT FILE */}
+                {msg.fileType ===
+                  "document" &&
+                  msg.fileUrl && (
+                    <a
+                      href={`https://securewave-backend-2.onrender.com/${msg.fileUrl}`}
+                      target="_blank"
+                      className="text-blue-300 underline block mb-2"
+                    >
+                      View Document
+                    </a>
+                  )}
+
+                {/* TEXT MESSAGE */}
+                {msg.message && (
+                  <p>
+                    {
+                      msg.message
+                    }
+                  </p>
+                )}
+
+                {/* TIME */}
+                <div className="text-xs mt-2 text-right">
                   {new Date(
                     msg.createdAt
                   ).toLocaleTimeString(
@@ -354,7 +358,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Input */}
+        {/* Input Section */}
         <div className="p-4 bg-[#202C33] flex gap-3">
 
           <input
